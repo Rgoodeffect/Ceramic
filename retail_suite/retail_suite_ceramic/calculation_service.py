@@ -92,3 +92,20 @@ def apply_to_item_row(row, price_list: str) -> None:
 	row.uom = "Box"
 	row.rate = result["rate_per_box"]
 	row.custom_delivered_area_sqm = result["delivered_area_sqm"]
+
+
+def validate_item_rows(doc) -> None:
+	"""`validate` doc_event body for Quotation and Sales Invoice (Phase 5).
+
+	Recomputes every ceramic item row from its required area so manual Desk
+	entry and the POS API always agree. Items without a configured Area Per
+	Box (i.e. not part of the ceramic vertical) are left untouched, so this
+	is safe on an instance where other, non-retail sales also happen.
+	"""
+	price_list = doc.get("selling_price_list")
+	for row in doc.items:
+		if not row.custom_required_area_sqm:
+			continue
+		if not frappe.db.get_value("Item", row.item_code, "custom_area_per_box"):
+			continue
+		apply_to_item_row(row, price_list)

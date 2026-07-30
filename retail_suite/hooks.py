@@ -80,9 +80,34 @@ fixtures = [
 
 # Doc Events
 # ----------
-# Populated in Phase 5 once CalculationService and the showroom-enforcement
-# validators land (retail_suite/services, retail_suite/retail_suite_ceramic).
-doc_events = {}
+# Showroom defaulting/locking (PLAN.md §1.4) applies to every showroom-scoped
+# doctype; CalculationService recomputes ceramic item rows so manual Desk
+# entry and the POS API (Phase 6) always agree; the Sales Invoice supplier
+# workflow is enforced at validate (supply source required) and before_submit
+# (a Confirmed Supplier Availability Confirmation must exist for any
+# Supplier-sourced line).
+_SHOWROOM_LOCK = "retail_suite.retail_suite_core.showroom.showroom_service.apply_showroom_default_and_lock"
+_CALC_MODULE = "retail_suite.retail_suite_ceramic.calculation_service"
+_SALES_SERVICE = "retail_suite.services.sales_service"
+
+doc_events = {
+	"Quotation": {
+		"validate": [_SHOWROOM_LOCK, f"{_CALC_MODULE}.validate_item_rows"],
+	},
+	"Sales Invoice": {
+		"validate": [
+			_SHOWROOM_LOCK,
+			f"{_CALC_MODULE}.validate_item_rows",
+			f"{_SALES_SERVICE}.validate_supply_sources",
+		],
+		"before_submit": [f"{_SALES_SERVICE}.validate_supplier_confirmation_before_submit"],
+	},
+	"Delivery Note": {"validate": _SHOWROOM_LOCK},
+	"Purchase Invoice": {"validate": _SHOWROOM_LOCK},
+	"Payment Entry": {"validate": _SHOWROOM_LOCK},
+	"Supplier Delivery Order": {"validate": _SHOWROOM_LOCK},
+	"Supplier Availability Confirmation": {"validate": _SHOWROOM_LOCK},
+}
 
 # Permission Query Conditions / has_permission
 # ---------------------------------------------

@@ -46,6 +46,52 @@ class TestCalculationService(FrappeTestCase):
 		self.assertAlmostEqual(result["rate_per_box"], 75)  # 50 * 1.5
 		self.assertAlmostEqual(result["amount"], 150)  # 2 boxes * 75
 
+	def test_validate_item_rows_matches_direct_calculate_row(self):
+		"""Manual Desk entry (validate_item_rows) and the POS API
+		(calculate_row / apply_to_item_row) must produce identical numbers -
+		this is the whole point of having a single Calculation Engine."""
+		item_code = self._make_test_item(area_per_box=1.5)
+		price_list = self._make_price_list_with_sqm_rate(item_code, rate=50)
+		expected = calc.calculate_row(item_code, 2.8, price_list)
+
+		quotation = frappe.new_doc("Quotation")
+		quotation.selling_price_list = price_list
+		row = quotation.append("items", {})
+		row.item_code = item_code
+		row.custom_required_area_sqm = 2.8
+
+		calc.validate_item_rows(quotation)
+
+		self.assertEqual(row.qty, expected["boxes"])
+		self.assertEqual(row.uom, "Box")
+		self.assertAlmostEqual(row.rate, expected["rate_per_box"])
+		self.assertAlmostEqual(row.custom_delivered_area_sqm, expected["delivered_area_sqm"])
+
+	def test_validate_item_rows_skips_non_ceramic_items(self):
+		"""An item with no Area Per Box configured is left completely alone."""
+		non_ceramic_item = "_Test Retail Suite Non Ceramic Item"
+		if not frappe.db.exists("Item", non_ceramic_item):
+			frappe.get_doc(
+				{
+					"doctype": "Item",
+					"item_code": non_ceramic_item,
+					"item_name": non_ceramic_item,
+					"item_group": "All Item Groups",
+					"stock_uom": "Nos",
+				}
+			).insert(ignore_permissions=True)
+
+		quotation = frappe.new_doc("Quotation")
+		row = quotation.append("items", {})
+		row.item_code = non_ceramic_item
+		row.qty = 5
+		row.rate = 20
+
+		calc.validate_item_rows(quotation)
+
+		self.assertEqual(row.qty, 5)
+		self.assertEqual(row.rate, 20)
+
 	def _make_test_item(self, area_per_box: float) -> str:
 		item_code = "_Test Retail Suite Ceramic Item"
 		if not frappe.db.exists("Item", item_code):
