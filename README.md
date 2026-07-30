@@ -12,10 +12,18 @@ Architecture, DocType design, permission matrix, and implementation roadmap:
 
 ## Status
 
-Phases 1-8 of the roadmap are complete (app scaffold, core doctypes,
+Phases 1-11 of the roadmap are complete (app scaffold, core doctypes,
 roles/permissions, calculation engine + services, validation hooks, API
-layer, Workspace, and the Ceramic POS). See
-`documentation/architecture/PLAN.md` for the full phase-by-phase status.
+layer, Workspace, the Ceramic POS, reports/dashboards, print formats, and
+demo data). See `documentation/architecture/PLAN.md` for the full
+phase-by-phase status.
+
+To load demo data (a company, the three showrooms, demo users, a small
+catalog, and one worked example of each fulfillment path) after install:
+
+```
+bench --site <site-name> execute retail_suite.setup.demo_data.create_demo_data
+```
 
 ## Project layout
 

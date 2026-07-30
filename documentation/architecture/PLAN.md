@@ -354,7 +354,7 @@ Notes:
 | 8. Ceramic POS (Vue 3 + Frappe UI + TS + Pinia) | Product search/cards, cart with live box/area calc, checkout → Quotation/Sales Invoice | POS mounted as a Frappe Page under Retail Suite, no standalone app | ✅ done - `npm run build` verified passing |
 | 9. Reports & Dashboards | Query/Script Reports from Part 7; Showroom + Executive dashboards, Number Cards, Charts | Each report answers a named business question, permission-scoped | ✅ done (see notes) |
 | 10. Print Formats & Letter Heads | Quotation, Sales Invoice, Delivery Note, Supplier Delivery Order, Payment Receipt; per-showroom Letter Head auto-select; QR code | Matches Part 8's "must/must-not display" rules per document | ✅ done - all 5 Jinja templates verified to actually render |
-| 11. Demo data fixtures | Company, 3 Branches (VF/AS/AT), sample customers/items/suppliers/transactions | Demonstrates full workflow end to end | pending |
+| 11. Demo data | Company, 3 Branches (VF/AS/AT), sample customers/items/suppliers/transactions | Demonstrates full workflow end to end | ✅ done |
 | 12. Tests | Unit (calculation, permission, service), integration (workflow), documented as pending real-bench execution | Test files complete and readable; execution deferred to real bench per environment note | pending |
 | 13. Documentation | Install, Admin, Salesperson, Developer, Architecture, API, Upgrade guides | One doc per audience, no placeholders | pending |
 | 14. Final review against spec's "Final System Review" / "Final Business Validation" / "Final Security Validation" checklists | Walk each checklist item in Parts 13/14 | All checked off or explicitly noted as deferred-to-real-bench | pending |
@@ -398,6 +398,36 @@ Phase 8 notes:
   something `bench build`/`install-app` can be assumed to trigger
   automatically, so this is called out explicitly in the install guide
   (Phase 13).
+
+Phase 11 notes:
+- **Demo data is a script, not a fixture** (`retail_suite/setup/demo_data.py`,
+  entry point `create_demo_data()`), run explicitly via
+  `bench --site <site> execute retail_suite.setup.demo_data.create_demo_data`
+  (documented in the install guide, Phase 13). Fixtures sync into *every*
+  site that installs the app, including real customer sites - a made-up
+  "Ceramic Showrooms Co" company with fake customers has no business
+  appearing there automatically. It's idempotent (existence-checked
+  throughout) so re-running it is safe.
+- It builds the three showrooms **using the spec's own example names**
+  (Ahmed→مجموعة الفيتوري, Mohamed→الأساس, Ali→Athar from Part 3), one demo
+  user per role, a 3-item ceramic catalog with Sq Meter Item Prices on the
+  standard "Standard Selling" price list, and - critically - **runs one
+  worked example of each fulfillment path through the real service layer**
+  (`quotation_service`, `sales_service`, `availability_confirmation_service`,
+  `supplier_delivery_service`), not just inserted rows: Quotation → Sales
+  Invoice for Company Warehouse, and Availability Confirmation → Sales
+  Invoice → Supplier Delivery Order for the Supplier path (exercising the
+  before_submit confirmation gate for real).
+- Also creates the three per-showroom Workspace variants deferred from
+  Phase 7, since they need the same real Branch records this script
+  creates.
+- Careful step-by-step tracing of this script (no live bench to run it
+  against) caught two real bugs before they shipped: `User.add_roles()`
+  calls `reload()`/`save()` internally and so must run *after* `insert()`,
+  not before; and Sales Invoice has no standard `remarks` field (used
+  `po_no` - a genuine standard field - for the idempotency marker instead).
+  This is exactly why services/tests were designed to be reasoned through
+  explicitly rather than assumed correct.
 
 Phase 10 notes:
 - **Letter Head auto-selection and QR population happen at `before_print`**
