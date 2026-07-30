@@ -1,0 +1,367 @@
+# Retail Suite for ERPNext — Architecture, DocType Design, Permission Matrix & Roadmap
+
+> This is the approved architecture plan for the project (see `CLAUDE.md` for the
+> full product specification it implements). It is the source of truth for
+> module boundaries, DocType design, and the permission model; update it if any
+> of those decisions change.
+
+## Context
+
+The specification in `CLAUDE.md` defines "Retail Suite for ERPNext" (first
+vertical: Ceramic Showroom) and instructs: analyze first, produce an
+Architecture Plan / DocType Design / Permission Matrix / Implementation
+Roadmap, and only then start building, feature by feature. This document is
+that deliverable, refined slightly during Phase 1 execution (see the
+naming-correction note at the end of §1.1).
+
+Two environment facts shape the plan:
+- **No live Frappe/bench runtime exists in the authoring environment.** The
+  app is **hand-authored as a standard Frappe app source tree** (the same
+  layout `bench new-app` produces), ready to be installed with
+  `bench --site SITE install-app retail_suite` in a real environment. Unit
+  tests are written as part of each phase but can only be *executed* once
+  installed into a real bench+site.
+- This is a greenfield build governed entirely by the spec's "ERPNext-first"
+  rule: reuse standard doctypes, extend only where there's no standard
+  equivalent, never duplicate.
+
+---
+
+## 1. Architecture Plan
+
+### 1.1 App identity
+
+- App name: `retail_suite` (Frappe app, `bench new-app` layout)
+- Two Frappe **Modules** (Module Def records, drive the Desk module list and
+  doctype ownership): **`Retail Suite Core`** and **`Retail Suite Ceramic`**.
+  Everything else (`services/`, `api/`, `reports/`, `dashboards/`, `public/`,
+  `fixtures/`, `patches/`, `tests/`) is plain code organization, not a
+  separate Frappe Module.
+
+```
+retail_suite/                          (repo root)
+├── pyproject.toml, license.txt, MANIFEST.in, README.md
+├── retail_suite/                      (Python package / app)
+│   ├── hooks.py
+│   ├── modules.txt                    # "Retail Suite Core", "Retail Suite Ceramic"
+│   ├── retail_suite_core/             # Module: Retail Suite Core
+│   │   ├── doctype/                   # Supplier Delivery Order, Supplier
+│   │   │                              # Availability Confirmation, Retail Suite Settings
+│   │   ├── showroom/                  # Branch extension helpers
+│   │   ├── permissions/               # permission_service (query conditions, has_permission)
+│   │   ├── report/                    # Query/Script Report doctype exports
+│   │   ├── dashboard_chart/, number_card/, workspace/, page/
+│   ├── retail_suite_ceramic/          # Module: Retail Suite Ceramic
+│   │   ├── doctype/                   # (none yet — Item is extended via Custom Field, not a doctype)
+│   │   ├── item_extension/            # Item custom field fixture definitions
+│   │   └── report/
+│   ├── services/                      # SalesService, QuotationService, CalculationService,
+│   │                                   # SupplierDeliveryService, AvailabilityConfirmationService,
+│   │                                   # DashboardService, ReportingService
+│   ├── api/                           # whitelisted endpoints only — thin, call services
+│   ├── reports/                       # shared report query/helper logic (not Report doctypes)
+│   ├── dashboards/                    # shared dashboard helper logic
+│   ├── public/
+│   │   └── pos/                       # Vue 3 + TS + Pinia POS SPA, mounted as a Frappe Page
+│   ├── fixtures/                      # Roles, Custom Fields, Workspaces, Print Formats,
+│   │                                   # Letter Heads, DocPerms, Notifications
+│   ├── patches/                       # schema/data migrations
+│   ├── config/, templates/, www/      # standard Frappe app folders
+│   └── tests/
+└── documentation/                     # install / admin / user / dev / API / upgrade guides
+```
+
+> **Naming correction made during Phase 1:** the folders for the two Modules
+> are `retail_suite_core` and `retail_suite_ceramic` (matching
+> `frappe.scrub("Retail Suite Core")`), not bare `core`/`ceramic` as an
+> earlier illustrative sketch of this tree showed. A Module Def literally
+> named `Core` would collide with Frappe framework's own built-in `Core`
+> module (Module Def names are global), so the modules are namespaced.
+
+### 1.2 Layering
+
+```
+Vue 3 POS (public/pos)
+   │  fetch/call via frappe-ui resource
+   ▼
+api/  (whitelisted methods — validate input shape only)
+   ▼
+services/  (ALL business rules live here: SalesService, QuotationService,
+            CalculationService, SupplierDeliveryService,
+            AvailabilityConfirmationService, PermissionService,
+            DashboardService, ReportingService)
+   ▼
+Frappe ORM / ERPNext standard doctypes (frappe.get_doc, Query Builder)
+   ▼
+MariaDB
+```
+
+No business logic in Client Scripts or Vue components — components call
+`api/` endpoints, which are thin wrappers that call a `services/` class
+method and return `{success, message, data, errors}`.
+
+### 1.3 Key architecture decisions
+
+These four decisions translate the spec's prose into concrete ERPNext
+mechanisms, favoring "reuse ERPNext" over literal doctype names in the spec.
+Flagging them explicitly since they're the highest-leverage calls in the
+whole design:
+
+1. **"Showroom" = extended ERPNext `Branch`, not a new custom doctype.**
+   The spec's own reuse list (Part 2) already names `Branch` as standard;
+   Part 9's "showroom concept" (name, code, company, address, contact,
+   letter head, assigned users, status) is exactly what `Branch` plus a
+   handful of custom fields covers. Creating a parallel "Showroom" doctype
+   would duplicate `Branch` and violate the "no duplicate doctypes" rule.
+   `Branch` gets custom fields: `custom_showroom_code` (VF/AS/AT),
+   `custom_address` (Link Address), `custom_phone`, `custom_email`,
+   `custom_letter_head` (Link Letter Head), `custom_status` (Active/Inactive).
+
+2. **Showroom data isolation = native ERPNext `User Permission` against
+   `Branch`, not a bespoke permission engine.**
+   Every transactional doctype (Quotation, Sales Invoice, Delivery Note,
+   Payment Entry, Supplier Delivery Order, Supplier Availability
+   Confirmation) gets a mandatory `custom_showroom` Link field (options:
+   `Branch`). A `User Permission` row (`allow=Branch`,
+   `for_value=<their showroom>`) is created per operational user during
+   onboarding. This is the standard ERPNext mechanism that *already*
+   auto-filters List Views, Reports, Search, and Link fields — satisfying
+   Part 3's "Automatic Showroom Filtering" requirement natively instead of
+   hand-rolling query filters everywhere. Company Owner / System Manager
+   simply get **no** User Permission row (unrestricted). A thin
+   `permission_service.py` still registers `permission_query_conditions` +
+   `has_permission` hooks per doctype as defense-in-depth (Part 3: "never
+   rely only on hiding buttons... validate server-side") and as the single
+   place vertical modules extend later.
+
+3. **Box/area math lives in custom fields + `CalculationService`, not in
+   UOM conversion factors, and pricing stays 100% in ERPNext Price
+   List/Item Price (no custom pricing engine).**
+   - Item: stock UOM = sales UOM = **"Box"** (integer, matches physical
+     delivery and real warehouse counts).
+   - Item Price records are created in Price Lists with UOM = **"Sq
+     Meter"** — this is where "Retail / Wholesale / Project / VIP"
+     price-per-m² lives, using ERPNext's existing per-UOM pricing,
+     untouched.
+   - Quotation Item / Sales Invoice Item / Delivery Note Item get two
+     custom fields: `custom_required_area_sqm` (input) and
+     `custom_delivered_area_sqm` (read-only, computed).
+   - `CalculationService.calculate_row(item_code, required_area, price_list)`:
+     `boxes = ceil(required_area / area_per_box)`;
+     `delivered_area = boxes * area_per_box`;
+     `rate = item_price_per_sqm(price_list) * area_per_box` (this becomes
+     the row's standard `rate` — a translation, not a second pricing
+     engine); `amount = boxes * rate = delivered_area * price_per_sqm`.
+   - This keeps `qty`/`uom`/`rate`/`amount` as plain standard fields (no
+     duplicated totals), while `custom_required_area_sqm`/
+     `custom_delivered_area_sqm` are the only new numbers, purely for
+     transparency/print/report. One engine
+     (`retail_suite_ceramic/calculation_service.py`) is called from the POS
+     API, from a `validate` hook on Quotation/Sales Invoice (so manual Desk
+     entry gets the same math), and from reports — never duplicated.
+
+4. **Product gallery = standard Frappe `File` attachments, not a new child
+   doctype.** Primary image uses Item's standard `image` field; the rest of
+   the gallery is just multiple attached `File` records against the Item
+   (`frappe.client.get_list("File", filters={"attached_to_doctype": "Item",
+   "attached_to_name": ...})`). No new "Item Image" child table needed.
+
+### 1.4 `hooks.py` responsibilities
+
+- `doc_events`: `Quotation`, `Sales Invoice` → `validate` (run
+  CalculationService, enforce showroom set, enforce non-negative/positive
+  area); `Sales Invoice` → `before_submit` (block if supply source =
+  Supplier and no *Confirmed* Supplier Availability Confirmation exists);
+  `Delivery Note`/`Purchase Invoice` → `validate` (showroom default/lock).
+- `permission_query_conditions` / `has_permission`: registered per
+  transactional doctype → `retail_suite_core/permissions/permission_service.py`.
+- `fixtures`: Custom Field, Custom DocPerm/Role, Workspace, Print Format,
+  Letter Head, Dashboard Chart, Number Card, Notification.
+- `after_install`: seed default Roles + Retail Suite Settings singleton.
+
+### 1.5 Calculation Engine contract (stable API, everything else calls this)
+
+```
+CalculationService.calculate_boxes(required_area_sqm, area_per_box) -> int   # ceil, validates > 0
+CalculationService.calculate_delivered_area(boxes, area_per_box) -> float
+CalculationService.calculate_row(item_code, required_area_sqm, price_list) -> {
+    boxes, delivered_area_sqm, rate_per_box, amount
+}
+```
+
+---
+
+## 2. DocType Design
+
+### 2.1 Reused standard doctypes (unmodified behavior, just used as-is)
+
+Company, Customer, Supplier, Item, Item Group, Brand, Warehouse, Quotation,
+Sales Invoice, Delivery Note, Purchase Invoice, Payment Entry, Price List,
+Item Price, Pricing Rule, User, Role, Workspace, Dashboard, Dashboard
+Chart, Number Card, Report, Print Format, Letter Head, File, Communication,
+Address, Contact, User Permission.
+
+### 2.2 Extended standard doctypes (custom fields, via `fixtures/custom_field.json`)
+
+| DocType | Field (fieldname) | Type | Notes |
+|---|---|---|---|
+| Branch (= "Showroom") | `custom_showroom_code` | Select (VF/AS/AT, extensible) | unique |
+| Branch | `custom_address` | Link → Address | |
+| Branch | `custom_phone`, `custom_email` | Data | |
+| Branch | `custom_letter_head` | Link → Letter Head | auto-selected on print, never user-chosen |
+| Branch | `custom_status` | Select (Active/Inactive) | |
+| Item | `custom_product_type` | Select (Tile/Porcelain) | |
+| Item | `custom_width`, `custom_height`, `custom_thickness` | Float (mm) | |
+| Item | `custom_finish`, `custom_color`, `custom_collection`, `custom_series` | Data/Select | |
+| Item | `custom_country_of_origin` | Link → Country | reuse standard Country doctype |
+| Item | `custom_area_per_box` | Float | **required**, drives all calculation |
+| Item | `custom_pieces_per_box` | Int | |
+| Item | `custom_show_in_pos`, `custom_featured_product` | Check | |
+| Item | `custom_display_sequence` | Int | |
+| Item | `custom_catalog_pdf` | Attach | |
+| Item | `custom_warranty_information` | Small Text | |
+| Quotation, Sales Invoice, Delivery Note, Purchase Invoice, Payment Entry | `custom_showroom` | Link → Branch | mandatory, set server-side from user's User Permission / default, read-only in UI |
+| Quotation Item, Sales Invoice Item, Delivery Note Item | `custom_required_area_sqm` | Float | salesperson input |
+| Quotation Item, Sales Invoice Item, Delivery Note Item | `custom_delivered_area_sqm` | Float, read-only | `boxes × area_per_box` |
+| User | `custom_default_showroom` | Link → Branch | source for the User Permission row; blank ⇒ Company Owner/System Manager (unrestricted) |
+
+### 2.3 New custom doctypes (exactly the 3 the spec calls for, plus Item stays standard)
+
+**Supplier Delivery Order** (submittable)
+Parent: `supplier` (Link Supplier), `showroom` (Link Branch), `customer`
+(Link Customer), `customer_address` (Link Address), `delivery_date`
+(Date), `status` (Select: Draft/Confirmed/Delivered/Cancelled),
+`remarks` (Small Text), `supplier_availability_confirmation`
+(Link → Supplier Availability Confirmation, mandatory before submit),
+`sales_invoice` (Link Sales Invoice, for traceability).
+Child table `Supplier Delivery Order Item`: `item_code`, `item_name`,
+`boxes_qty` (Int), `supplier_notes`. **No price fields anywhere on this
+doctype** (enforced by field list, not just hidden in UI).
+
+**Supplier Availability Confirmation** (submittable)
+`supplier` (Link Supplier), `contact_person`, `phone_number`,
+`confirmed_by` (Link User), `confirmation_date` (Date),
+`confirmation_time` (Time), `status` (Select: Confirmed/Rejected/Pending),
+`remarks`, `showroom` (Link Branch), `item` (Link Item, optional — which
+product was confirmed).
+
+**Retail Suite Settings** (single doctype)
+`default_company` (Link Company), `enabled_verticals` (Table MultiSelect
+or JSON — Ceramic checked by default), `default_currency`,
+`default_language`, `discount_approval_limit` (Percent),
+`pos_default_price_list` (Link Price List), feature-flag checks
+(`enable_supplier_delivery_workflow`, `enable_advanced_dashboard`, etc.).
+
+### 2.4 Dependency map
+
+```
+Branch(Showroom) ──< User Permission >── User
+Company ──< Branch(Showroom)
+Item ──< Item Price >── Price List
+Customer ──< Quotation ──< Sales Invoice
+                                │
+                 ┌──────────────┴───────────────┐
+                 ▼                               ▼
+        Company Warehouse path            Supplier path
+        Delivery Note (stock)      Supplier Availability Confirmation
+                                          │
+                                          ▼
+                                 Supplier Delivery Order
+                                          │
+                                          ▼
+                                  Purchase Invoice (later)
+                 │
+                 ▼
+           Payment Entry
+```
+All nodes carry `custom_showroom`; every arrow is a standard ERPNext
+link/`get_mapped_doc` relationship except Supplier Availability
+Confirmation → Supplier Delivery Order, which is a hard validation in
+`SupplierDeliveryService` (cannot create the order without a *Confirmed*
+status confirmation).
+
+---
+
+## 3. Permission Matrix
+
+Roles created (fixtures): `Retail Salesperson`, `Retail Showroom Manager`,
+`Retail Warehouse User`, `Retail Purchasing User`, `Retail Accounts User`,
+`Retail Company Owner`. `System Manager` is reused as-is (unrestricted,
+standard).
+
+All rows below are **additionally** scoped by the showroom `User
+Permission` mechanism (§1.3‑2) except where marked "All showrooms".
+
+| DocType | Salesperson | Showroom Manager | Warehouse User | Purchasing User | Accounts User | Company Owner |
+|---|---|---|---|---|---|---|
+| Customer | C,R,W | R,W | – | – | R | R (All) |
+| Quotation | C,R,W,Submit | R,W,Submit,Cancel | – | – | R | R (All) |
+| Sales Invoice | C,R,Submit | R,Submit,Cancel(approve) | – | – | R,W | R (All) |
+| Sales Invoice — Rate/Amount fields (permlevel 1) | R | R | **no access** | **no access** | R | R (All) |
+| Delivery Note | R (own) | R | R,W,Submit | – | – | R (All) |
+| Delivery Note — price fields | – | – | **no access** | – | – | – |
+| Supplier Availability Confirmation | C,R,W | R | – | R,W | R | R (All) |
+| Supplier Delivery Order | C,R,W,Submit | R,Submit,Cancel(approve) | – | R,W | R | R (All) |
+| Purchase Invoice | – | – | – | C,R,W | R,W,Submit | R (All) |
+| Payment Entry | C,R | R | – | – | R,W,Submit | R (All) |
+| Item / Price List | R | R | R | R | R | R (All) |
+| Supplier | R | R | – | C,R,W | R | R (All) |
+| Branch (Showroom) | R (own) | R (own) | R (own) | R (own) | R (own) | C,R,W (All) |
+| Retail Suite Settings | – | – | – | – | – | R,W (System Manager: full) |
+| Showroom Dashboard/Reports | R (own) | R (own) | – | – | R (own) | R (All) + Executive Dashboard |
+| Executive Dashboard / Cross-showroom comparison | – | – | – | – | – | R |
+
+Notes:
+- "Approve" actions (discount approval, cancellation, return approval) are
+  gated inside `services/` via a role check (`Showroom Manager`/`Company
+  Owner`) rather than raw DocType permission, matching Part 3's approval
+  rules.
+- Field-level hiding of price/discount/financial data on Delivery Note and
+  Supplier Delivery Order is enforced with `permlevel` on those fields
+  (server-side, not just print-format hiding) — satisfies "never rely only
+  on hiding buttons."
+- `permission_query_conditions`/`has_permission` in `permission_service.py`
+  is the backstop that re-validates showroom scope on every API call,
+  independent of the Desk UI.
+
+---
+
+## 4. Implementation Roadmap
+
+| Phase | Deliverable | Exit criteria | Status |
+|---|---|---|---|
+| 1. App scaffold | Hand-author `retail_suite` app tree (§1.1), `hooks.py`, `modules.txt` | Structure matches §1.1; importable as a Frappe app once placed in a real bench | ✅ done |
+| 2. Core doctypes & fixtures | `Supplier Delivery Order`, `Supplier Availability Confirmation`, `Retail Suite Settings`; Custom Fields from §2.2 as fixtures | JSON doctype defs + fixture files complete, self-consistent | pending |
+| 3. Roles & permissions | 6 custom Roles, DocPerm fixtures per §3, `permission_service.py` (query conditions + has_permission) | Permission matrix fully expressed in fixtures/code | pending |
+| 4. Calculation Engine & services | `CalculationService`, `SalesService`, `QuotationService`, `SupplierDeliveryService`, `AvailabilityConfirmationService` | Unit tests written for all 5 calculation test cases from spec Part 12 (ready to run once bench-installed) | pending |
+| 5. doc_events / validation hooks | Wire CalculationService + showroom enforcement into Quotation/Sales Invoice/Delivery Note/Purchase Invoice `validate` | Manual Desk entry and API entry produce identical results | pending |
+| 6. API layer | Whitelisted endpoints in `api/` wrapping the services, uniform `{success,message,data,errors}` response | Each service method has a thin corresponding endpoint | pending |
+| 7. Workspace & Desk integration | `Retail Suite` Workspace with cards/shortcuts; per-showroom workspace variant | Appears natively in Desk per Part 2/9 | pending |
+| 8. Ceramic POS (Vue 3 + Frappe UI + TS + Pinia) | Product search/cards, cart with live box/area calc, checkout → Quotation/Sales Invoice | POS mounted as a Frappe Page under Retail Suite, no standalone app | pending |
+| 9. Reports & Dashboards | Query/Script Reports from Part 7; Showroom + Executive dashboards, Number Cards, Charts | Each report answers a named business question, permission-scoped | pending |
+| 10. Print Formats & Letter Heads | Quotation, Sales Invoice, Delivery Note, Supplier Delivery Order, Payment Receipt; per-showroom Letter Head auto-select; QR code | Matches Part 8's "must/must-not display" rules per document | pending |
+| 11. Demo data fixtures | Company, 3 Branches (VF/AS/AT), sample customers/items/suppliers/transactions | Demonstrates full workflow end to end | pending |
+| 12. Tests | Unit (calculation, permission, service), integration (workflow), documented as pending real-bench execution | Test files complete and readable; execution deferred to real bench per environment note | pending |
+| 13. Documentation | Install, Admin, Salesperson, Developer, Architecture, API, Upgrade guides | One doc per audience, no placeholders | pending |
+| 14. Final review against spec's "Final System Review" / "Final Business Validation" / "Final Security Validation" checklists | Walk each checklist item in Parts 13/14 | All checked off or explicitly noted as deferred-to-real-bench | pending |
+
+Each phase is built, self-reviewed, and reported before moving to the next
+(per the spec's "work feature by feature" rule) rather than generated all
+at once.
+
+---
+
+## 5. Decisions confirmed with the product owner
+
+1. **Showroom = extended `Branch`**, not a new "Showroom" doctype (§1.3‑1).
+   Biggest literal deviation from the spec's prose, done specifically to
+   satisfy the spec's own "never duplicate ERPNext DocTypes" rule.
+2. **Showroom isolation via native `User Permission`** rather than a
+   custom permission engine (§1.3‑2).
+3. **Box/area math via custom fields on child tables + a rate
+   translation, not UOM-conversion tricks**, keeping Price List/Item
+   Price as the sole pricing source (§1.3‑3).
+4. **No live bench/Frappe in the authoring environment** — the app source
+   tree is hand-authored to be install-ready; `bench install-app`,
+   `bench migrate`, and actual test execution happen once this is placed
+   in a real Frappe environment.

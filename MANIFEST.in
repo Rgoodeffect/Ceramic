@@ -1,0 +1,19 @@
+include MANIFEST.in
+include license.txt
+include *.json
+include *.md
+include *.py
+include *.txt
+recursive-include retail_suite *.css
+recursive-include retail_suite *.csv
+recursive-include retail_suite *.html
+recursive-include retail_suite *.js
+recursive-include retail_suite *.json
+recursive-include retail_suite *.md
+recursive-include retail_suite *.png
+recursive-include retail_suite *.py
+recursive-include retail_suite *.svg
+recursive-include retail_suite *.ts
+recursive-include retail_suite *.vue
+recursive-include retail_suite *.txt
+recursive-exclude retail_suite *.pyc
