@@ -55,6 +55,16 @@ SHOWROOMS = [
 	("Athar", "AT", "Athar Ceramic Showroom"),
 ]
 
+# Each showroom's real logo, shipped as a static app asset
+# (retail_suite/public/images/showroom_logos/) rather than a File
+# attachment, so it's available immediately on install with no manual
+# upload step and is versioned with the rest of the app.
+LOGO_FILENAME_BY_CODE = {
+	"VF": "vf.jpg",
+	"AS": "as.jpg",
+	"AT": "at.png",
+}
+
 # (email, first_name, role, showroom_code or None for unrestricted)
 DEMO_USERS = [
 	("ahmed@retailsuite.demo", "Ahmed", "Retail Salesperson", "VF"),
@@ -110,15 +120,20 @@ def _create_showrooms_and_letter_heads() -> dict:
 	branches_by_code = {}
 	for branch_name, code, letter_head_text in SHOWROOMS:
 		letter_head_name = f"{branch_name} Letter Head"
+		logo_url = f"/assets/retail_suite/images/showroom_logos/{LOGO_FILENAME_BY_CODE[code]}"
+		logo_html = f"<img src='{logo_url}' style='max-height:70px' alt='{branch_name}'><br>"
+		content = f"<div style='text-align:center'>{logo_html}<h2>{branch_name}</h2><p>{letter_head_text}</p></div>"
 		if not frappe.db.exists("Letter Head", letter_head_name):
 			frappe.get_doc(
 				{
 					"doctype": "Letter Head",
 					"letter_head_name": letter_head_name,
 					"source": "HTML",
-					"content": f"<div style='text-align:center'><h2>{branch_name}</h2><p>{letter_head_text}</p></div>",
+					"content": content,
 				}
 			).insert(ignore_permissions=True)
+		else:
+			frappe.db.set_value("Letter Head", letter_head_name, "content", content)
 
 		if not frappe.db.exists("Branch", branch_name):
 			frappe.get_doc(
