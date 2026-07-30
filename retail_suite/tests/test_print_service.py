@@ -32,14 +32,19 @@ class TestPrintService(FrappeTestCase):
 		server-side rendering, so a print format can only ever show a real
 		QR code if this method builds one itself (see print_service.py's
 		_apply_qr_code docstring; found by loading a real print view in a
-		browser and seeing literal text where a QR code should be)."""
+		browser and seeing literal text where a QR code should be).
+
+		PNG, not SVG: an SVG data URI renders fine in a live browser print
+		preview but is silently dropped by wkhtmltopdf (the PDF export
+		engine) - found by downloading and inspecting a real generated PDF,
+		not just the in-browser preview."""
 		quotation = frappe.get_doc({"doctype": "Quotation", "name": "QTN-TEST-0001"})
 		print_service.apply_print_context(quotation)
-		self.assertTrue(quotation.custom_qr_code.startswith("data:image/svg+xml;base64,"))
+		self.assertTrue(quotation.custom_qr_code.startswith("data:image/png;base64,"))
 		import base64
 
-		svg = base64.b64decode(quotation.custom_qr_code.split(",", 1)[1]).decode()
-		self.assertIn("<svg", svg)
+		png_bytes = base64.b64decode(quotation.custom_qr_code.split(",", 1)[1])
+		self.assertTrue(png_bytes.startswith(b"\x89PNG\r\n\x1a\n"))
 
 	def test_qr_code_is_skipped_for_unsupported_doctypes(self):
 		delivery_note = frappe.get_doc({"doctype": "Delivery Note", "name": "DN-TEST-0001"})

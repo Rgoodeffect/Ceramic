@@ -511,17 +511,31 @@ Phase 10 notes:
   server-side rendering at all - `doc.get_formatted()` on a Barcode field
   just returns its raw value; the scannable graphic normally only exists
   client-side, drawn by the Desk form control's JS barcode library, which
-  never runs during a server-rendered print/PDF. Fixed the same way
-  Frappe's own two-factor-auth QR code does it
-  (`frappe.twofactor.get_qr_svg_code`): build an SVG with `pyqrcode`
-  (already a transitive Frappe dependency, confirmed installed in this
-  bench's venv), base64-encode it into a `data:image/svg+xml;base64,...`
-  URI, and store *that* in `custom_qr_code` - `Barcode` maps to a
+  never runs during a server-rendered print/PDF. Fixed by building an
+  image with `pyqrcode` (already a transitive Frappe dependency, confirmed
+  installed in this bench's venv - the same library `frappe.twofactor.
+  get_qr_svg_code` uses for the two-factor-auth QR), base64-encoded into a
+  `data:` URI and stored *in* `custom_qr_code` - `Barcode` maps to a
   `longtext` DB column (`frappe.database.mariadb.database.type_map`), so
   it holds the (much longer) data URI without issue. The 3 print formats
   that show a QR code were updated to render
   `<img src="{{ doc.custom_qr_code }}">` directly instead of
   `{{ doc.get_formatted("custom_qr_code") }}`.
+- **PNG, not SVG, for that QR image** - the first version used an SVG data
+  URI (`data:image/svg+xml;base64,...`), which rendered perfectly in a
+  live browser print preview... and, it turned out, *only* there.
+  Downloading the actual exported PDF (`download_pdf`, which goes through
+  `wkhtmltopdf` - version 0.12.6 here, a considerably older QtWebKit
+  build - via `frappe.utils.pdf`) and inspecting it with `pypdf` showed
+  zero embedded images on the page: wkhtmltopdf silently drops an `<img>`
+  whose `src` is an SVG data URI, for the exact same HTML that renders the
+  QR code correctly in a live browser. The browser preview at `/printview`
+  is not a reliable proxy for what the actual PDF a user downloads,
+  emails, or prints looks like - confirmed only by downloading a real PDF
+  and checking its contents, not by screenshotting the preview. Fixed by
+  switching to PNG (`pyqrcode`'s `.png()`, backed by the already-installed
+  `pypng`) - a raster format every renderer here handles identically,
+  browser or PDF.
 - **The Letter Head was computed but never actually rendered anywhere -**
   a much bigger miss than the QR one, and just as invisible without a real
   browser: `_apply_letter_head` correctly set `doc.letter_head`, but every

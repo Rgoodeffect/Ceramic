@@ -50,14 +50,22 @@ def _apply_qr_code(doc) -> None:
 	a print format calls) just returns the plain string value unchanged - the
 	scannable graphic only ever gets drawn client-side, by the Desk form
 	control's JS barcode library, which isn't loaded during a server-rendered
-	print/PDF. Print formats got a real QR code by hand-tracing a document
-	through the browser and noticing the field printed as literal text (see
-	PLAN.md) - fixed by generating the image ourselves, the same way Frappe's
-	own two-factor-auth QR (`frappe.twofactor.get_qr_svg_code`) does: an SVG
-	built with `pyqrcode` (already a Frappe dependency), base64-encoded into
-	a `data:` URI so print formats can embed it directly with
-	`<img src="{{ doc.custom_qr_code }}">` - no extra network request, and it
-	survives PDF export the same way any other embedded image does.
+	print/PDF. Fixed by generating the image ourselves with `pyqrcode`
+	(already a Frappe dependency, the same library `frappe.twofactor.
+	get_qr_svg_code` uses for the two-factor-auth QR), base64-encoded into a
+	`data:` URI so print formats can embed it directly with
+	`<img src="{{ doc.custom_qr_code }}">`.
+
+	PNG, not SVG: an SVG data URI is exactly what Frappe's own 2FA code
+	uses, and it renders correctly in a live browser print preview - but
+	`bench`'s PDF export goes through `wkhtmltopdf` (0.12.6, a considerably
+	older QtWebKit build) via `frappe.utils.pdf`, which silently drops an
+	`<img>` whose `src` is an SVG data URI - confirmed by downloading a real
+	PDF (`download_pdf`) and finding zero embedded XObjects on the page,
+	despite the exact same HTML rendering the QR code correctly in-browser.
+	PNG (via `pyqrcode`'s own `pypng`-backed `.png()`, already installed
+	alongside it) is a raster format every renderer here supports the same
+	way, browser or PDF.
 	"""
 	if doc.doctype not in QR_FIELD_DOCTYPES or not doc.meta.has_field("custom_qr_code"):
 		return
@@ -66,9 +74,9 @@ def _apply_qr_code(doc) -> None:
 
 	stream = BytesIO()
 	try:
-		qrcreate(f"{doc.doctype}:{doc.name}").svg(stream, scale=4, background="#ffffff", module_color="#111111")
-		svg_b64 = b64encode(stream.getvalue()).decode()
+		qrcreate(f"{doc.doctype}:{doc.name}").png(stream, scale=4)
+		png_b64 = b64encode(stream.getvalue()).decode()
 	finally:
 		stream.close()
 
-	doc.custom_qr_code = f"data:image/svg+xml;base64,{svg_b64}"
+	doc.custom_qr_code = f"data:image/png;base64,{png_b64}"

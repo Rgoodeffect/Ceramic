@@ -139,7 +139,14 @@ Done in this pass, per `testing-report.md`:
    just template source): Sales Invoice, Delivery Note, and (implicitly,
    same code path) the other 3 formats all show the correct Arabic RTL
    letterhead, a real scannable QR code, and A4-styled layout via
-   Frappe's standard `/printview` route. Not done: exporting to an actual
-   PDF file and inspecting it (the `Get PDF` link was confirmed present
-   and pointing at the correct endpoint, but the PDF itself wasn't
-   downloaded and opened in this pass).
+   Frappe's standard `/printview` route.
+6. ✅ Downloaded the actual exported PDFs (via `download_pdf`, the same
+   endpoint the "Get PDF" link uses) and inspected them with `pypdf` -
+   valid single-page PDFs with all expected text content, confirmed by
+   `file` (magic-byte detection) and by extracting page text. This caught
+   a real bug the browser preview couldn't: the QR code's SVG data URI
+   rendered fine in-browser but was silently dropped by `wkhtmltopdf`
+   (the actual PDF engine, an older QtWebKit build) - the exported PDF had
+   zero embedded images. Switched the QR code to PNG (still via
+   `pyqrcode`); the re-downloaded PDF now has a real embedded 164×164
+   image on the page, confirmed via `pypdf`'s XObject inspection.
