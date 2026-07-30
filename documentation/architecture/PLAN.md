@@ -223,6 +223,7 @@ Address, Contact, User Permission.
 | Quotation, Sales Invoice, Delivery Note, Purchase Invoice, Payment Entry | `custom_showroom` | Link → Branch | mandatory, set server-side from user's User Permission / default, read-only in UI |
 | Quotation Item, Sales Invoice Item, Delivery Note Item | `custom_required_area_sqm` | Float | salesperson input |
 | Quotation Item, Sales Invoice Item, Delivery Note Item | `custom_delivered_area_sqm` | Float, read-only | `boxes × area_per_box` |
+| Sales Invoice Item | `custom_supply_source` | Select (Company Warehouse/Supplier) | **added in Phase 4** — internal routing only, `print_hide`, never shown on customer-facing documents; tells `SupplierDeliveryService` which lines need a Supplier Delivery Order vs a Delivery Note |
 | User | `custom_default_showroom` | Link → Branch | source for the User Permission row; blank ⇒ Company Owner/System Manager (unrestricted) |
 
 ### 2.3 New custom doctypes (exactly the 3 the spec calls for, plus Item stays standard)
@@ -346,7 +347,7 @@ Notes:
 | 1. App scaffold | Hand-author `retail_suite` app tree (§1.1), `hooks.py`, `modules.txt` | Structure matches §1.1; importable as a Frappe app once placed in a real bench | ✅ done |
 | 2. Core doctypes & fixtures | `Supplier Delivery Order`, `Supplier Availability Confirmation`, `Retail Suite Settings`; Custom Fields from §2.2 as fixtures | JSON doctype defs + fixture files complete, self-consistent | ✅ done |
 | 3. Roles & permissions | 6 custom Roles, DocPerm fixtures per §3, `permission_service.py` (query conditions + has_permission) | Permission matrix fully expressed in fixtures/code | ✅ done |
-| 4. Calculation Engine & services | `CalculationService`, `SalesService`, `QuotationService`, `SupplierDeliveryService`, `AvailabilityConfirmationService` | Unit tests written for all 5 calculation test cases from spec Part 12 (ready to run once bench-installed) | pending |
+| 4. Calculation Engine & services | `CalculationService`, `SalesService`, `QuotationService`, `SupplierDeliveryService`, `AvailabilityConfirmationService` | Unit tests written for all 5 calculation test cases from spec Part 12 (ready to run once bench-installed) | ✅ done |
 | 5. doc_events / validation hooks | Wire CalculationService + showroom enforcement into Quotation/Sales Invoice/Delivery Note/Purchase Invoice `validate` | Manual Desk entry and API entry produce identical results | pending |
 | 6. API layer | Whitelisted endpoints in `api/` wrapping the services, uniform `{success,message,data,errors}` response | Each service method has a thin corresponding endpoint | pending |
 | 7. Workspace & Desk integration | `Retail Suite` Workspace with cards/shortcuts; per-showroom workspace variant | Appears natively in Desk per Part 2/9 | pending |

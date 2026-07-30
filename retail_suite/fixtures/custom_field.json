@@ -363,6 +363,19 @@
  },
  {
   "doctype": "Custom Field",
+  "name": "Sales Invoice Item-custom_supply_source",
+  "dt": "Sales Invoice Item",
+  "fieldname": "custom_supply_source",
+  "label": "Supply Source",
+  "fieldtype": "Select",
+  "options": "Company Warehouse\nSupplier",
+  "reqd": 1,
+  "insert_after": "custom_delivered_area_sqm",
+  "print_hide": 1,
+  "description": "Internal routing only - determines whether this line becomes part of a Delivery Note (Company Warehouse) or a Supplier Delivery Order (Supplier). Never shown on customer-facing documents (spec: Sales Invoice must not display Supply Source)."
+ },
+ {
+  "doctype": "Custom Field",
   "name": "Delivery Note Item-custom_required_area_sqm",
   "dt": "Delivery Note Item",
   "fieldname": "custom_required_area_sqm",
