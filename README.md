@@ -7,16 +7,19 @@ native ERPNext POS, area/box sale-unit conversion, company-warehouse and
 external-supplier fulfillment, and strict per-showroom data isolation.
 
 Full product specification: [`CLAUDE.md`](./CLAUDE.md).
-Architecture, DocType design, permission matrix, and implementation roadmap:
-[`documentation/architecture/PLAN.md`](./documentation/architecture/PLAN.md).
+Full documentation index (architecture, install, admin, user, developer,
+API, testing, upgrade): [`documentation/README.md`](./documentation/README.md).
 
 ## Status
 
-Phases 1-11 of the roadmap are complete (app scaffold, core doctypes,
+Phases 1-13 of the roadmap are complete (app scaffold, core doctypes,
 roles/permissions, calculation engine + services, validation hooks, API
-layer, Workspace, the Ceramic POS, reports/dashboards, print formats, and
-demo data). See `documentation/architecture/PLAN.md` for the full
-phase-by-phase status.
+layer, Workspace, the Ceramic POS, reports/dashboards, print formats,
+demo data, tests, and documentation); Phase 14 (final review against the
+spec's own checklists) is next. See `documentation/architecture/PLAN.md`
+for the full phase-by-phase status, and `documentation/testing-report.md`
+for exactly what has and hasn't been verified without a live bench in this
+authoring environment.
 
 To load demo data (a company, the three showrooms, demo users, a small
 catalog, and one worked example of each fulfillment path) after install:

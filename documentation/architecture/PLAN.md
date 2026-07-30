@@ -356,7 +356,7 @@ Notes:
 | 10. Print Formats & Letter Heads | Quotation, Sales Invoice, Delivery Note, Supplier Delivery Order, Payment Receipt; per-showroom Letter Head auto-select; QR code | Matches Part 8's "must/must-not display" rules per document | ✅ done - all 5 Jinja templates verified to actually render |
 | 11. Demo data | Company, 3 Branches (VF/AS/AT), sample customers/items/suppliers/transactions | Demonstrates full workflow end to end | ✅ done |
 | 12. Tests | Unit (calculation, permission, service), integration (workflow), documented as pending real-bench execution | Test files complete and readable; execution deferred to real bench per environment note | ✅ done - 15 test files |
-| 13. Documentation | Install, Admin, Salesperson, Developer, Architecture, API, Upgrade guides | One doc per audience, no placeholders | pending |
+| 13. Documentation | Install, Admin, Salesperson, Developer, Architecture, API, Upgrade guides | One doc per audience, no placeholders | ✅ done |
 | 14. Final review against spec's "Final System Review" / "Final Business Validation" / "Final Security Validation" checklists | Walk each checklist item in Parts 13/14 | All checked off or explicitly noted as deferred-to-real-bench | pending |
 
 Each phase is built, self-reviewed, and reported before moving to the next
