@@ -1,32 +1,34 @@
 # Final Review (Phase 14)
 
 Walking the exact checklists from `CLAUDE.md` Parts 13/14 against what's
-actually in this repository. Same standard as `testing-report.md`: state
-plainly what's verified, what's implemented-but-unverified (no live bench
-in this environment), and what's out of scope, rather than rounding
-everything up to "done."
+actually in this repository. Updated after standing up a real Frappe 15 +
+ERPNext 15 bench and running the app against it - see
+`testing-report.md` for the full account of what that run found and fixed
+(eight real, previously-undetected bugs). Still stating plainly what's
+verified, what's implemented-but-unverified, and what's out of scope,
+rather than rounding everything up to "done."
 
 ## Final System Review
 
 | Item | Status | Evidence |
 |---|---|---|
-| Application installs successfully | ⚠️ Unverified | No live bench in this environment to run `bench install-app` against. Structure matches a standard Frappe app; JSON/Python/JS all validated (see below). |
-| ERPNext integration works | ⚠️ Unverified | Reuses standard doctypes throughout (§2.1 of PLAN.md); no core files modified. Needs a real ERPNext site to confirm. |
-| Retail Suite appears in Desk | ✅ Implemented | `retail_suite_core/workspace/retail_suite/` - best-effort JSON schema, see PLAN.md Phase 7 caveat. |
-| Workspace works | ✅ Implemented, ⚠️ schema unverified | Same caveat as above. |
-| Users and roles work | ✅ Implemented | 6 roles + 45 Custom DocPerm rows (`fixtures/role.json`, `fixtures/custom_docperm.json`), covering the full matrix in PLAN.md §3. |
-| Showroom permissions work | ✅ Implemented and tested | `permission_service.py` + `test_permission_service.py`, `test_showroom_service.py`, and asserted end-to-end in `test_workflow_integration.py`. |
-| POS works | ✅ Build verified | `frontend/` builds successfully (`npm run build`, re-confirmed during this review); mounted via `retail_suite_core/page/ceramic_pos`. Interactive/browser testing not possible in this environment. |
-| Calculations work | ✅ Implemented and tested | `calculation_service.py`; all 5 spec Part 12 test cases pass as written (traced by hand, not executed - see testing-report.md). |
-| Quotation works | ✅ Implemented and tested | `quotation_service.py` + `test_quotation_service.py`. |
-| Sales Invoice works | ✅ Implemented and tested | `sales_service.py` + `test_sales_service.py`. |
-| Company Warehouse workflow works | ⚠️ Partial | Quotation → Sales Invoice (Company Warehouse supply source) is implemented and demonstrated in `setup/demo_data.py`. The next step - Sales Invoice → Delivery Note → stock deduction - relies entirely on ERPNext's own standard stock functionality (spec: "Use standard ERPNext Stock functionality"), which this app deliberately does not configure (Warehouse/Stock Settings are a per-deployment concern). Not a gap in this app's logic, but genuinely unexercised here. |
-| Supplier workflow works | ✅ Implemented and tested, full loop | Availability Confirmation → Sales Invoice (blocked without it, allowed with it) → Supplier Delivery Order, in `test_sales_service.py`, `test_supplier_delivery_service.py`, and `test_workflow_integration.py`. |
-| Reports work | ✅ Implemented | 8 Script Reports (PLAN.md Phase 9), each explicitly showroom-scoped. |
-| Dashboards work | ✅ Implemented, ⚠️ schema unverified | Showroom + Executive dashboards, 11 Number Cards, 2 Dashboard Charts. Number Card/Dashboard Chart JSON schema is best-effort (PLAN.md Phase 9 caveat); the underlying Python (`dashboards/number_cards.py`) is tested directly. |
-| Printing works | ✅ Rendering verified | All 5 print formats actually rendered (not just JSON-validated) against mock documents using `jinja2` during Phase 10 - see PLAN.md Phase 10 notes. |
+| Application installs successfully | ✅ Verified live | `bench --site retailsuite.local install-app retail_suite` completed with zero errors on a real Frappe 15 + ERPNext 15 site. |
+| ERPNext integration works | ✅ Verified live | Reuses standard doctypes throughout (§2.1 of PLAN.md); no core files modified; confirmed by the same successful install + migrate. |
+| Retail Suite appears in Desk | ✅ Implemented and synced | `retail_suite_core/workspace/retail_suite/` - confirmed present and correctly populated in the live site's database after migrate. |
+| Workspace works | ✅ Schema verified | Confirmed synced correctly into a real site's `tabWorkspace`/content JSON; not click-tested in a browser (no interactive session in this environment). |
+| Users and roles work | ✅ Implemented and verified live | 6 roles + Custom DocPerm rows (`fixtures/role.json`, `fixtures/custom_docperm.json`), covering the full matrix in PLAN.md §3 (now including the `Account` grant found missing by live testing - see below). Confirmed synced correctly on migrate. |
+| Showroom permissions work | ✅ Implemented and tested (52/52 passing) | `permission_service.py` + `test_permission_service.py`, `test_showroom_service.py`, and asserted end-to-end in `test_workflow_integration.py` - all executed against a real site, not just traced by hand. |
+| POS works | ✅ Build verified | `frontend/` builds successfully; mounted via `retail_suite_core/page/ceramic_pos`. Interactive/browser click-through still not done in this environment (no browser-against-Desk session available). |
+| Calculations work | ✅ Implemented and tested (executed) | `calculation_service.py`; all 5 spec Part 12 test cases pass, actually executed via `bench run-tests`, not just traced by hand. |
+| Quotation works | ✅ Implemented and tested (executed) | `quotation_service.py` + `test_quotation_service.py`. |
+| Sales Invoice works | ✅ Implemented and tested (executed) | `sales_service.py` + `test_sales_service.py`, including a real `Sales Invoice.submit()` against a live site (which is what surfaced the `write`-permission-for-submit bug - see testing-report.md). |
+| Company Warehouse workflow works | ⚠️ Partial, but the Sales Invoice half is now live-verified | `setup/demo_data.py`'s Company Warehouse path (Quotation → Sales Invoice, submitted) was run end to end on a real site and confirmed in the database. The next step - Sales Invoice → Delivery Note → stock deduction - still relies entirely on ERPNext's own standard stock functionality, which this app deliberately does not configure (Warehouse/Stock Settings are a per-deployment concern) - genuinely unexercised here. |
+| Supplier workflow works | ✅ Implemented and tested, full loop (executed) | Availability Confirmation → Sales Invoice (blocked without it, allowed with it) → Supplier Delivery Order, in `test_sales_service.py`, `test_supplier_delivery_service.py`, and `test_workflow_integration.py` - and separately end to end via `demo_data.py` on a live site (1 Supplier Availability Confirmation + 1 Supplier Delivery Order created and confirmed in the database). |
+| Reports work | ✅ Implemented and synced | 8 Script Reports (PLAN.md Phase 9), each explicitly showroom-scoped; confirmed present in the live site after migrate. |
+| Dashboards work | ✅ Implemented and synced | Showroom + Executive dashboards, Number Cards, Dashboard Charts - confirmed present with correct card/chart links in the live site's database after migrate (this is what caught the `{module}_dashboard` folder-naming requirement - see PLAN.md Phase 9). |
+| Printing works | ✅ Rendering verified | All 5 print formats actually rendered against mock documents using `jinja2`. Not re-verified against real live documents in this pass (still open, see below). |
 | Backup works | ✅ No new mechanism | This app introduces no custom storage outside standard Frappe doctypes/files, so standard `bench backup` covers it unchanged. |
-| Migration works | ⚠️ Unverified | No live bench to run `bench migrate` against. All JSON is individually schema-validated; the doctype-JSON `field_order`/`fields` consistency was explicitly checked for every custom doctype and Custom Field batch. |
+| Migration works | ✅ Verified live | `bench --site retailsuite.local migrate` completed cleanly, repeatedly, across every fix in this pass. |
 
 ## Final Business Validation
 
@@ -108,16 +110,22 @@ used it.
 
 ## What would change this from "code-complete" to "production-ready"
 
-In order of priority, per `testing-report.md`:
+Done in this pass, per `testing-report.md`:
 
-1. Run `bench --site <site> migrate` on a real Frappe 15/ERPNext 15 site
-   and fix whatever the three flagged best-effort JSON schemas (Workspace
-   content, Number Card, Dashboard Chart) need for that exact version.
-2. Run `bench --site <site> run-tests --app retail_suite` and fix whatever
-   the 15 test files reveal that manual tracing missed.
-3. Click through the POS as a real user in a browser against that site.
+1. ✅ Ran `bench --site <site> migrate` on a real Frappe 15/ERPNext 15 site
+   and fixed everything it and `bench run-tests` needed - eight real bugs,
+   documented in PLAN.md next to each affected design decision.
+2. ✅ Ran `bench --site <site> run-tests --app retail_suite` to a clean
+   52/52 pass, and separately ran `demo_data.py` end to end with verified
+   database output.
+
+Still open, in order of priority:
+
+3. Click through the POS as a real user in a browser against that site -
+   no browser-against-Desk session was available in this environment.
 4. Configure Warehouse/Stock Settings for a real company and complete the
    Company Warehouse path through an actual Delivery Note and stock
    deduction.
 5. Visually check the 5 print formats' A4 layout, RTL rendering, and QR
-   code output as real PDFs, not just rendered HTML strings.
+   code output as real PDFs against real live documents, not just
+   rendered HTML strings against mock data.
