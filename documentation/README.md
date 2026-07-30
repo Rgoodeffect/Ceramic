@@ -8,7 +8,7 @@
 | Salespeople using the POS | [`user-guide-salesperson.md`](./user-guide-salesperson.md) |
 | Developers extending this app | [`developer-guide.md`](./developer-guide.md) |
 | Anyone calling the whitelisted endpoints | [`api-reference.md`](./api-reference.md) |
-| Anyone assessing production-readiness | [`testing-report.md`](./testing-report.md) |
+| Anyone assessing production-readiness | [`testing-report.md`](./testing-report.md) and [`final-review.md`](./final-review.md) |
 | Whoever upgrades a live install | [`upgrade-guide.md`](./upgrade-guide.md) |
 
 The full product specification this app implements lives at the repo root:

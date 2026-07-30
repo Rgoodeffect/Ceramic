@@ -12,14 +12,18 @@ API, testing, upgrade): [`documentation/README.md`](./documentation/README.md).
 
 ## Status
 
-Phases 1-13 of the roadmap are complete (app scaffold, core doctypes,
+All 14 roadmap phases are complete: app scaffold, core doctypes,
 roles/permissions, calculation engine + services, validation hooks, API
 layer, Workspace, the Ceramic POS, reports/dashboards, print formats,
-demo data, tests, and documentation); Phase 14 (final review against the
-spec's own checklists) is next. See `documentation/architecture/PLAN.md`
-for the full phase-by-phase status, and `documentation/testing-report.md`
-for exactly what has and hasn't been verified without a live bench in this
-authoring environment.
+demo data, tests, documentation, and a final review against the spec's own
+checklists. See `documentation/architecture/PLAN.md` for the full
+phase-by-phase history, `documentation/final-review.md` for the checklist
+walk-through, and `documentation/testing-report.md` for exactly what has
+and hasn't been verified without a live bench in this authoring
+environment - **that last point matters**: this codebase is complete and
+carefully reasoned through, but has not been executed against a real
+Frappe site. Run `bench migrate` and `bench run-tests` before treating it
+as production-verified.
 
 To load demo data (a company, the three showrooms, demo users, a small
 catalog, and one worked example of each fulfillment path) after install:
