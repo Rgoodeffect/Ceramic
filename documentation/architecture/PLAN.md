@@ -350,7 +350,7 @@ Notes:
 | 4. Calculation Engine & services | `CalculationService`, `SalesService`, `QuotationService`, `SupplierDeliveryService`, `AvailabilityConfirmationService` | Unit tests written for all 5 calculation test cases from spec Part 12 (ready to run once bench-installed) | ✅ done |
 | 5. doc_events / validation hooks | Wire CalculationService + showroom enforcement into Quotation/Sales Invoice/Delivery Note/Purchase Invoice `validate` | Manual Desk entry and API entry produce identical results | ✅ done |
 | 6. API layer | Whitelisted endpoints in `api/` wrapping the services, uniform `{success,message,data,errors}` response | Each service method has a thin corresponding endpoint | ✅ done |
-| 7. Workspace & Desk integration | `Retail Suite` Workspace with cards/shortcuts; per-showroom workspace variant | Appears natively in Desk per Part 2/9 | pending |
+| 7. Workspace & Desk integration | `Retail Suite` Workspace with cards/shortcuts; per-showroom workspace variant | Appears natively in Desk per Part 2/9 | ✅ done (per-showroom variants deferred to Phase 11, see note below) |
 | 8. Ceramic POS (Vue 3 + Frappe UI + TS + Pinia) | Product search/cards, cart with live box/area calc, checkout → Quotation/Sales Invoice | POS mounted as a Frappe Page under Retail Suite, no standalone app | pending |
 | 9. Reports & Dashboards | Query/Script Reports from Part 7; Showroom + Executive dashboards, Number Cards, Charts | Each report answers a named business question, permission-scoped | pending |
 | 10. Print Formats & Letter Heads | Quotation, Sales Invoice, Delivery Note, Supplier Delivery Order, Payment Receipt; per-showroom Letter Head auto-select; QR code | Matches Part 8's "must/must-not display" rules per document | pending |
@@ -369,6 +369,19 @@ natural home for, since Phase 8's POS cannot function without them:
 (live cart calculation before a line is committed to a document), and
 `api/customer.quick_create_customer` (minimum-fields customer creation using
 the standard Customer/Contact/Address doctypes).
+
+Phase 7 note - per-showroom workspaces deferred to Phase 11: the spec's
+"مجموعة الفيتوري Workspace" example is *this customer's* branding/business
+data (their three showrooms' actual names), not generic Retail Suite
+architecture - a different commercial customer installing this app would
+have entirely different showroom names. The single `Retail Suite` Workspace
+built in this phase is the native Desk entry point for every role; each
+user only ever sees their own showroom's data on it regardless, because
+that's enforced by the permission system (§1.3-2), not by which workspace
+page they're looking at. The three literally-named showroom workspaces
+(with this customer's logos/branding) are added in Phase 11 alongside the
+Branch/Company demo records they reference, as customer-specific fixtures
+rather than app architecture.
 
 ---
 

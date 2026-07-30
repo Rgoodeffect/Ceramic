@@ -16,8 +16,11 @@ app_license = "Proprietary"
 
 # Fixtures
 # --------
-# Populated as Workspaces, Print Formats, Letter Heads and Dashboards are
-# added (Phases 7, 9-10). See documentation/architecture/PLAN.md.
+# Populated as Print Formats, Letter Heads and Property Setters are added
+# (Phases 9-10). See documentation/architecture/PLAN.md. Workspace, Report,
+# and Dashboard Chart records are NOT fixtures - they live under their own
+# module folders (retail_suite_core/workspace/, /report/, /dashboard_chart/)
+# and sync automatically via the standard module-reload mechanism.
 fixtures = [
 	{
 		"doctype": "Custom Field",
