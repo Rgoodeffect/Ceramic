@@ -355,7 +355,7 @@ Notes:
 | 9. Reports & Dashboards | Query/Script Reports from Part 7; Showroom + Executive dashboards, Number Cards, Charts | Each report answers a named business question, permission-scoped | ✅ done (see notes) |
 | 10. Print Formats & Letter Heads | Quotation, Sales Invoice, Delivery Note, Supplier Delivery Order, Payment Receipt; per-showroom Letter Head auto-select; QR code | Matches Part 8's "must/must-not display" rules per document | ✅ done - all 5 Jinja templates verified to actually render |
 | 11. Demo data | Company, 3 Branches (VF/AS/AT), sample customers/items/suppliers/transactions | Demonstrates full workflow end to end | ✅ done |
-| 12. Tests | Unit (calculation, permission, service), integration (workflow), documented as pending real-bench execution | Test files complete and readable; execution deferred to real bench per environment note | pending |
+| 12. Tests | Unit (calculation, permission, service), integration (workflow), documented as pending real-bench execution | Test files complete and readable; execution deferred to real bench per environment note | ✅ done - 15 test files |
 | 13. Documentation | Install, Admin, Salesperson, Developer, Architecture, API, Upgrade guides | One doc per audience, no placeholders | pending |
 | 14. Final review against spec's "Final System Review" / "Final Business Validation" / "Final Security Validation" checklists | Walk each checklist item in Parts 13/14 | All checked off or explicitly noted as deferred-to-real-bench | pending |
 
@@ -398,6 +398,37 @@ Phase 8 notes:
   something `bench build`/`install-app` can be assumed to trigger
   automatically, so this is called out explicitly in the install guide
   (Phase 13).
+
+Phase 12 notes:
+- **15 test files** (`retail_suite/tests/` for cross-cutting concerns,
+  alongside their own doctype/module for the rest): the 3 custom doctypes,
+  the calculation engine (all 5 spec Part 12 test cases plus an end-to-end
+  row test and a doc_events-vs-API parity test), permission_service,
+  showroom_service, the API envelope, session context, number cards, print
+  service, and - direct unit tests for the first time in Phase 12 - all
+  four business services (QuotationService, SalesService,
+  AvailabilityConfirmationService, SupplierDeliveryService), which had
+  previously only been exercised indirectly via the Phase 11 demo script.
+- **`tests/test_utils.py`** factors out the Branch/User/Item/Price
+  List/Customer/Supplier setup every test needs, introduced in this phase;
+  earlier test files (Phases 2-10) keep their original inline setup rather
+  than being retrofitted, since they're already correct and untouched code
+  carries less risk than a mechanical refactor with no live bench to verify
+  it against.
+- **`test_workflow_integration.py`** runs the spec's own worked example
+  (Part 6/13: 2.8 m² → 2 boxes → 3.0 m² delivered → 150 grand total at
+  50/m²) through the real service layer end to end - Quotation → Sales
+  Invoice → Supplier Delivery Order - and then asserts the Final Security
+  Validation from spec Part 13/14 directly: a salesperson in a different
+  showroom has no permission on either document, while the Company Owner
+  does.
+- As stated since Phase 1: none of these tests have been *executed* -
+  there is no live Frappe/bench in this environment. Every test in this
+  app has instead been reasoned through file-by-file against the actual
+  service code it exercises (and, for the calculation/permission-service
+  logic, checked with plain `python3 -m py_compile` plus manual tracing).
+  Run the suite for real with `bench --site <site> run-tests --app retail_suite`
+  once installed.
 
 Phase 11 notes:
 - **Demo data is a script, not a fixture** (`retail_suite/setup/demo_data.py`,
