@@ -1,0 +1,19 @@
+{
+ "doctype": "Dashboard Chart",
+ "name": "Sales By Showroom",
+ "chart_name": "Sales By Showroom",
+ "chart_type": "Group By",
+ "document_type": "Sales Invoice",
+ "group_by_type": "Count",
+ "group_by_based_on": "custom_showroom",
+ "aggregate_function_based_on": "grand_total",
+ "type": "Bar",
+ "timeseries": 0,
+ "filters_json": "[[\"Sales Invoice\",\"docstatus\",\"=\",1]]",
+ "is_public": 1,
+ "module": "Retail Suite Core",
+ "creation": "2026-07-30 00:00:00.000000",
+ "modified": "2026-07-30 00:00:00.000000",
+ "modified_by": "Administrator",
+ "owner": "Administrator"
+}

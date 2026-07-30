@@ -1,0 +1,25 @@
+{
+ "doctype": "Dashboard",
+ "name": "Executive Dashboard",
+ "dashboard_name": "Executive Dashboard",
+ "module": "Retail Suite Core",
+ "is_default": 0,
+ "is_standard": 1,
+ "cards": [
+  { "doctype": "Number Card Link", "card": "Today's Sales" },
+  { "doctype": "Number Card Link", "card": "Monthly Sales" },
+  { "doctype": "Number Card Link", "card": "Yearly Sales" },
+  { "doctype": "Number Card Link", "card": "Total Customers" },
+  { "doctype": "Number Card Link", "card": "Today's Invoices" },
+  { "doctype": "Number Card Link", "card": "Pending Supplier Orders" },
+  { "doctype": "Number Card Link", "card": "Pending Payments" }
+ ],
+ "charts": [
+  { "doctype": "Dashboard Chart Link", "chart": "Sales By Showroom", "width": "Full" },
+  { "doctype": "Dashboard Chart Link", "chart": "Daily Sales Trend", "width": "Full" }
+ ],
+ "creation": "2026-07-30 00:00:00.000000",
+ "modified": "2026-07-30 00:00:00.000000",
+ "modified_by": "Administrator",
+ "owner": "Administrator"
+}

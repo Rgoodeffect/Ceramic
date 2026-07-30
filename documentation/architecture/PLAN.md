@@ -352,7 +352,7 @@ Notes:
 | 6. API layer | Whitelisted endpoints in `api/` wrapping the services, uniform `{success,message,data,errors}` response | Each service method has a thin corresponding endpoint | ✅ done |
 | 7. Workspace & Desk integration | `Retail Suite` Workspace with cards/shortcuts; per-showroom workspace variant | Appears natively in Desk per Part 2/9 | ✅ done (per-showroom variants deferred to Phase 11, see note below) |
 | 8. Ceramic POS (Vue 3 + Frappe UI + TS + Pinia) | Product search/cards, cart with live box/area calc, checkout → Quotation/Sales Invoice | POS mounted as a Frappe Page under Retail Suite, no standalone app | ✅ done - `npm run build` verified passing |
-| 9. Reports & Dashboards | Query/Script Reports from Part 7; Showroom + Executive dashboards, Number Cards, Charts | Each report answers a named business question, permission-scoped | pending |
+| 9. Reports & Dashboards | Query/Script Reports from Part 7; Showroom + Executive dashboards, Number Cards, Charts | Each report answers a named business question, permission-scoped | ✅ done (see notes) |
 | 10. Print Formats & Letter Heads | Quotation, Sales Invoice, Delivery Note, Supplier Delivery Order, Payment Receipt; per-showroom Letter Head auto-select; QR code | Matches Part 8's "must/must-not display" rules per document | pending |
 | 11. Demo data fixtures | Company, 3 Branches (VF/AS/AT), sample customers/items/suppliers/transactions | Demonstrates full workflow end to end | pending |
 | 12. Tests | Unit (calculation, permission, service), integration (workflow), documented as pending real-bench execution | Test files complete and readable; execution deferred to real bench per environment note | pending |
@@ -398,6 +398,46 @@ Phase 8 notes:
   something `bench build`/`install-app` can be assumed to trigger
   automatically, so this is called out explicitly in the install guide
   (Phase 13).
+
+Phase 9 notes:
+- **8 Script Reports** (`retail_suite_core/report/` for generic ones,
+  `retail_suite_ceramic/report/` for box/area-specific ones): Sales Summary,
+  Sales By Showroom (Company Owner only, via `report_utils.require_company_owner`),
+  Salesperson Performance, Customer Sales History, Quotation Analysis,
+  Supplier Delivery Report, Top Selling Products, Product Performance.
+  "Salesperson" is the document's `owner` (the POS always creates
+  documents as the logged-in user; there's no separate Sales Team
+  allocation step in this design). "Most Profitable" in Product Performance
+  is a documented proxy (revenue/volume ranking) - there is no landed-cost
+  data for supplier-sourced items to compute a true margin, and the spec
+  explicitly forbids tracking supplier stock/cost.
+- **Script Reports use raw parameterized SQL, not the permission-checked
+  ORM** (`frappe.db.sql`, needed for the aggregate joins/group-bys), so
+  every one of them explicitly applies `report_utils.get_showroom_condition()`
+  - this is the one place in the app where showroom scoping has to be
+  hand-added rather than inherited automatically, and it's called out here
+  so a future report author doesn't skip it.
+- **Number Cards are "Custom" type, backed by real Python**
+  (`retail_suite/dashboards/number_cards.py`) rather than static filter
+  JSON, because several metrics ("Today's Sales", "Monthly Sales", "Yearly
+  Sales") need a real dynamic date range evaluated on every view. These
+  *do* go through `frappe.get_list` (not `get_all`), so showroom scoping
+  is automatic and correct there without special-casing.
+- **Two Dashboard Charts** (Daily Sales Trend - line/time-series; Sales By
+  Showroom - bar/group-by) feed both the Showroom Dashboard and the
+  Executive Dashboard.
+- **Dashboard-level access is not role-gated** the way Reports/Pages are
+  (the `Dashboard` doctype has no `roles` table): any role that can read
+  Sales Invoice can open the Executive Dashboard page. This is not a data
+  leak - every card/chart on it still queries through the showroom-scoped
+  permission system, so a Salesperson who navigates there just sees their
+  own showroom's numbers under executive labels - but it's a real UX gap
+  worth tightening later (e.g. a Property Setter hiding the sidebar link
+  for non-owner roles).
+- **Best-effort JSON schema, same caveat as the Phase 7 Workspace:**
+  Number Card ("Custom" type + `method`) and Dashboard Chart field names
+  are written from best available knowledge of the Frappe 15 schema without
+  a live bench to verify against; check them on first real `bench migrate`.
 
 Phase 7 note - per-showroom workspaces deferred to Phase 11: the spec's
 "مجموعة الفيتوري Workspace" example is *this customer's* branding/business
