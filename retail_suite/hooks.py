@@ -16,8 +16,8 @@ app_license = "Proprietary"
 
 # Fixtures
 # --------
-# Populated as Roles, Custom Fields, Workspaces, Print Formats, Letter Heads
-# and Dashboards are added (Phases 2-3, 7, 9-10). See documentation/architecture/PLAN.md.
+# Populated as Workspaces, Print Formats, Letter Heads and Dashboards are
+# added (Phases 7, 9-10). See documentation/architecture/PLAN.md.
 fixtures = [
 	{
 		"doctype": "Custom Field",
@@ -41,7 +41,41 @@ fixtures = [
 				],
 			],
 		],
-	}
+	},
+	{
+		"doctype": "Role",
+		"filters": [
+			[
+				"name",
+				"in",
+				[
+					"Retail Salesperson",
+					"Retail Showroom Manager",
+					"Retail Warehouse User",
+					"Retail Purchasing User",
+					"Retail Accounts User",
+					"Retail Company Owner",
+				],
+			]
+		],
+	},
+	{
+		"doctype": "Custom DocPerm",
+		"filters": [
+			[
+				"role",
+				"in",
+				[
+					"Retail Salesperson",
+					"Retail Showroom Manager",
+					"Retail Warehouse User",
+					"Retail Purchasing User",
+					"Retail Accounts User",
+					"Retail Company Owner",
+				],
+			]
+		],
+	},
 ]
 
 # Doc Events
@@ -52,7 +86,29 @@ doc_events = {}
 
 # Permission Query Conditions / has_permission
 # ---------------------------------------------
-# Wired up in Phase 3 (showroom permission enforcement) via
-# retail_suite.retail_suite_core.permissions.permission_service
-permission_query_conditions = {}
-has_permission = {}
+# Showroom-isolation backstop (defense-in-depth on top of the User
+# Permission mechanism - see documentation/architecture/PLAN.md §1.3-2 and
+# retail_suite_core/permissions/permission_service.py).
+_PERM_MODULE = "retail_suite.retail_suite_core.permissions.permission_service"
+
+permission_query_conditions = {
+	"Quotation": f"{_PERM_MODULE}.get_permission_query_conditions_quotation",
+	"Sales Invoice": f"{_PERM_MODULE}.get_permission_query_conditions_sales_invoice",
+	"Delivery Note": f"{_PERM_MODULE}.get_permission_query_conditions_delivery_note",
+	"Purchase Invoice": f"{_PERM_MODULE}.get_permission_query_conditions_purchase_invoice",
+	"Payment Entry": f"{_PERM_MODULE}.get_permission_query_conditions_payment_entry",
+	"Supplier Delivery Order": f"{_PERM_MODULE}.get_permission_query_conditions_supplier_delivery_order",
+	"Supplier Availability Confirmation": (
+		f"{_PERM_MODULE}.get_permission_query_conditions_supplier_availability_confirmation"
+	),
+}
+
+has_permission = {
+	"Quotation": f"{_PERM_MODULE}.has_permission",
+	"Sales Invoice": f"{_PERM_MODULE}.has_permission",
+	"Delivery Note": f"{_PERM_MODULE}.has_permission",
+	"Purchase Invoice": f"{_PERM_MODULE}.has_permission",
+	"Payment Entry": f"{_PERM_MODULE}.has_permission",
+	"Supplier Delivery Order": f"{_PERM_MODULE}.has_permission",
+	"Supplier Availability Confirmation": f"{_PERM_MODULE}.has_permission",
+}

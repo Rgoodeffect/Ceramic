@@ -1,0 +1,44 @@
+[
+ {
+  "doctype": "Role",
+  "name": "Retail Salesperson",
+  "role_name": "Retail Salesperson",
+  "desk_access": 1,
+  "disabled": 0
+ },
+ {
+  "doctype": "Role",
+  "name": "Retail Showroom Manager",
+  "role_name": "Retail Showroom Manager",
+  "desk_access": 1,
+  "disabled": 0
+ },
+ {
+  "doctype": "Role",
+  "name": "Retail Warehouse User",
+  "role_name": "Retail Warehouse User",
+  "desk_access": 1,
+  "disabled": 0
+ },
+ {
+  "doctype": "Role",
+  "name": "Retail Purchasing User",
+  "role_name": "Retail Purchasing User",
+  "desk_access": 1,
+  "disabled": 0
+ },
+ {
+  "doctype": "Role",
+  "name": "Retail Accounts User",
+  "role_name": "Retail Accounts User",
+  "desk_access": 1,
+  "disabled": 0
+ },
+ {
+  "doctype": "Role",
+  "name": "Retail Company Owner",
+  "role_name": "Retail Company Owner",
+  "desk_access": 1,
+  "disabled": 0
+ }
+]

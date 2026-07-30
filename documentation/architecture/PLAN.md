@@ -297,9 +297,7 @@ Permission` mechanism (§1.3‑2) except where marked "All showrooms".
 | Customer | C,R,W | R,W | – | – | R | R (All) |
 | Quotation | C,R,W,Submit | R,W,Submit,Cancel | – | – | R | R (All) |
 | Sales Invoice | C,R,Submit | R,Submit,Cancel(approve) | – | – | R,W | R (All) |
-| Sales Invoice — Rate/Amount fields (permlevel 1) | R | R | **no access** | **no access** | R | R (All) |
 | Delivery Note | R (own) | R | R,W,Submit | – | – | R (All) |
-| Delivery Note — price fields | – | – | **no access** | – | – | – |
 | Supplier Availability Confirmation | C,R,W | R | – | R,W | R | R (All) |
 | Supplier Delivery Order | C,R,W,Submit | R,Submit,Cancel(approve) | – | R,W | R | R (All) |
 | Purchase Invoice | – | – | – | C,R,W | R,W,Submit | R (All) |
@@ -316,13 +314,28 @@ Notes:
   gated inside `services/` via a role check (`Showroom Manager`/`Company
   Owner`) rather than raw DocType permission, matching Part 3's approval
   rules.
-- Field-level hiding of price/discount/financial data on Delivery Note and
-  Supplier Delivery Order is enforced with `permlevel` on those fields
-  (server-side, not just print-format hiding) — satisfies "never rely only
-  on hiding buttons."
+- Price/discount/financial data on Delivery Note and Supplier Delivery
+  Order is kept away from Warehouse/Purchasing users **without** touching
+  `permlevel` on the underlying standard fields: Warehouse User and
+  Purchasing User simply never get a Sales Invoice / pricing-doctype
+  permission at all (see table), and the Delivery Note / Supplier Delivery
+  Order print formats (Phase 10) omit price fields entirely regardless of
+  who prints them. Setting `permlevel` on `Sales Invoice Item`/`Delivery
+  Note Item` fields was considered and rejected — it is a **global**
+  change that would hide those fields from every role on the site
+  (including ERPNext's own Sales/Accounts roles), not just our two
+  restricted roles, so it's the wrong tool here.
 - `permission_query_conditions`/`has_permission` in `permission_service.py`
   is the backstop that re-validates showroom scope on every API call,
   independent of the Desk UI.
+- Custom DocPerm fixtures (`fixtures/custom_docperm.json`) add these role
+  rows to standard ERPNext doctypes (Customer, Quotation, Sales Invoice,
+  Delivery Note, Supplier, Purchase Invoice, Payment Entry, Item, Price
+  List, Branch) without editing ERPNext's own doctype JSON — this is the
+  standard, upgrade-safe ERPNext mechanism for exactly this purpose. The
+  three app-owned custom doctypes carry their permissions directly in
+  their own DocType JSON instead (see §2.3), since there's no foreign
+  JSON to avoid touching.
 
 ---
 
@@ -332,7 +345,7 @@ Notes:
 |---|---|---|---|
 | 1. App scaffold | Hand-author `retail_suite` app tree (§1.1), `hooks.py`, `modules.txt` | Structure matches §1.1; importable as a Frappe app once placed in a real bench | ✅ done |
 | 2. Core doctypes & fixtures | `Supplier Delivery Order`, `Supplier Availability Confirmation`, `Retail Suite Settings`; Custom Fields from §2.2 as fixtures | JSON doctype defs + fixture files complete, self-consistent | ✅ done |
-| 3. Roles & permissions | 6 custom Roles, DocPerm fixtures per §3, `permission_service.py` (query conditions + has_permission) | Permission matrix fully expressed in fixtures/code | pending |
+| 3. Roles & permissions | 6 custom Roles, DocPerm fixtures per §3, `permission_service.py` (query conditions + has_permission) | Permission matrix fully expressed in fixtures/code | ✅ done |
 | 4. Calculation Engine & services | `CalculationService`, `SalesService`, `QuotationService`, `SupplierDeliveryService`, `AvailabilityConfirmationService` | Unit tests written for all 5 calculation test cases from spec Part 12 (ready to run once bench-installed) | pending |
 | 5. doc_events / validation hooks | Wire CalculationService + showroom enforcement into Quotation/Sales Invoice/Delivery Note/Purchase Invoice `validate` | Manual Desk entry and API entry produce identical results | pending |
 | 6. API layer | Whitelisted endpoints in `api/` wrapping the services, uniform `{success,message,data,errors}` response | Each service method has a thin corresponding endpoint | pending |
