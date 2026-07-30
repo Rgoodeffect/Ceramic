@@ -9,14 +9,23 @@ class TestPermissionService(FrappeTestCase):
 		self.branch_vf = self._ensure_branch("_Test Showroom VF")
 		self.branch_as = self._ensure_branch("_Test Showroom AS")
 		self.user = self._ensure_user("retail-suite-test-salesperson@example.com")
-		frappe.get_doc(
-			{
-				"doctype": "User Permission",
-				"user": self.user,
-				"allow": "Branch",
-				"for_value": self.branch_vf,
-			}
-		).insert(ignore_permissions=True)
+		# FrappeTestCase only rolls back once per test *class* (see
+		# addClassCleanup(_rollback_db) in frappe.tests.utils), not per test
+		# method, so setUp() runs against the same open transaction across
+		# every test in this class - this insert must be idempotent like
+		# `_ensure_user`/`_ensure_branch` above, or it raises
+		# DuplicateEntryError from the second test method onward.
+		if not frappe.db.exists(
+			"User Permission", {"user": self.user, "allow": "Branch", "for_value": self.branch_vf}
+		):
+			frappe.get_doc(
+				{
+					"doctype": "User Permission",
+					"user": self.user,
+					"allow": "Branch",
+					"for_value": self.branch_vf,
+				}
+			).insert(ignore_permissions=True)
 
 	def _ensure_branch(self, name: str) -> str:
 		if not frappe.db.exists("Branch", name):

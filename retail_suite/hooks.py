@@ -90,6 +90,7 @@ fixtures = [
 # (a Confirmed Supplier Availability Confirmation must exist for any
 # Supplier-sourced line).
 _SHOWROOM_LOCK = "retail_suite.retail_suite_core.showroom.showroom_service.apply_showroom_default_and_lock"
+_SHOWROOM_REQUIRE = "retail_suite.retail_suite_core.showroom.showroom_service.require_showroom_before_submit"
 _CALC_MODULE = "retail_suite.retail_suite_ceramic.calculation_service"
 _SALES_SERVICE = "retail_suite.services.sales_service"
 _PRINT_SERVICE = "retail_suite.retail_suite_core.printing.print_service.apply_print_context"
@@ -97,6 +98,7 @@ _PRINT_SERVICE = "retail_suite.retail_suite_core.printing.print_service.apply_pr
 doc_events = {
 	"Quotation": {
 		"validate": [_SHOWROOM_LOCK, f"{_CALC_MODULE}.validate_item_rows"],
+		"before_submit": [_SHOWROOM_REQUIRE],
 		"before_print": [_PRINT_SERVICE],
 	},
 	"Sales Invoice": {
@@ -105,14 +107,29 @@ doc_events = {
 			f"{_CALC_MODULE}.validate_item_rows",
 			f"{_SALES_SERVICE}.validate_supply_sources",
 		],
-		"before_submit": [f"{_SALES_SERVICE}.validate_supplier_confirmation_before_submit"],
+		"before_submit": [_SHOWROOM_REQUIRE, f"{_SALES_SERVICE}.validate_supplier_confirmation_before_submit"],
 		"before_print": [_PRINT_SERVICE],
 	},
-	"Delivery Note": {"validate": _SHOWROOM_LOCK, "before_print": [_PRINT_SERVICE]},
-	"Purchase Invoice": {"validate": _SHOWROOM_LOCK, "before_print": [_PRINT_SERVICE]},
-	"Payment Entry": {"validate": _SHOWROOM_LOCK, "before_print": [_PRINT_SERVICE]},
+	"Delivery Note": {
+		"validate": _SHOWROOM_LOCK,
+		"before_submit": [_SHOWROOM_REQUIRE],
+		"before_print": [_PRINT_SERVICE],
+	},
+	"Purchase Invoice": {
+		"validate": _SHOWROOM_LOCK,
+		"before_submit": [_SHOWROOM_REQUIRE],
+		"before_print": [_PRINT_SERVICE],
+	},
+	"Payment Entry": {
+		"validate": _SHOWROOM_LOCK,
+		"before_submit": [_SHOWROOM_REQUIRE],
+		"before_print": [_PRINT_SERVICE],
+	},
 	"Supplier Delivery Order": {"validate": _SHOWROOM_LOCK, "before_print": [_PRINT_SERVICE]},
 	"Supplier Availability Confirmation": {"validate": _SHOWROOM_LOCK},
+	"Branch": {
+		"validate": ["retail_suite.retail_suite_core.showroom.showroom_service.validate_showroom_code"]
+	},
 }
 
 # Permission Query Conditions / has_permission

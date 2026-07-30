@@ -5,14 +5,11 @@
   "dt": "Branch",
   "fieldname": "custom_showroom_code",
   "label": "Showroom Code",
-  "fieldtype": "Select",
-  "options": "VF\nAS\nAT",
+  "fieldtype": "Data",
   "insert_after": "branch",
-  "reqd": 1,
-  "unique": 1,
   "in_list_view": 1,
   "in_standard_filter": 1,
-  "description": "Short code identifying this showroom (e.g. VF, AS, AT)."
+  "description": "Short code identifying this showroom (e.g. VF, AS, AT for the three current showrooms; extensible for future ones). Deliberately a free-text Data field, not Select: (1) Select cannot carry a DB-level unique constraint in Frappe, so uniqueness is enforced instead in showroom_service.validate_showroom_code; (2) a fixed-option Select cannot support adding a 4th+ showroom and, worse, Frappe auto-defaults every new document's blank Select field to its first option (frappe/model/create_new.py) - so every Branch created without explicitly choosing a code silently became a duplicate 'VF', which a real bench test run caught immediately. Not field-level required either, for the same reason as Item.custom_area_per_box and *.custom_showroom: Branch is a shared standard doctype other modules may create test/dependency records against with no knowledge of this field."
  },
  {
   "doctype": "Custom Field",
@@ -170,10 +167,9 @@
   "fieldtype": "Float",
   "precision": "3",
   "non_negative": 1,
-  "reqd": 1,
   "insert_after": "custom_country_of_origin",
   "in_list_view": 1,
-  "description": "Used by the Calculation Engine to convert a customer's required area into whole boxes. Must be greater than zero."
+  "description": "Required for ceramic items sold through the POS/Quotation/Sales Invoice flow - retail_suite_ceramic.calculation_service enforces that at the point of use (frappe.throw if missing or zero), not here. Not making this field-level `reqd` on Item itself: that would force every Item in the system - including ERPNext's own standard test fixtures and any future non-ceramic item - to carry a box size that makes no sense for them."
  },
  {
   "doctype": "Custom Field",
@@ -243,11 +239,10 @@
   "fieldtype": "Link",
   "options": "Branch",
   "insert_after": "company",
-  "reqd": 1,
   "in_list_view": 1,
   "in_standard_filter": 1,
   "allow_on_submit": 0,
-  "description": "Automatically set from your assigned showroom. Cannot be changed manually."
+  "description": "Automatically set from your assigned showroom. Cannot be changed manually. Not field-level required (would break generic test fixtures on this shared doctype); enforced instead in retail_suite_core.showroom.showroom_service.require_showroom_before_submit."
  },
  {
   "doctype": "Custom Field",
@@ -258,11 +253,10 @@
   "fieldtype": "Link",
   "options": "Branch",
   "insert_after": "company",
-  "reqd": 1,
   "in_list_view": 1,
   "in_standard_filter": 1,
   "allow_on_submit": 0,
-  "description": "Automatically set from your assigned showroom. Cannot be changed manually."
+  "description": "Automatically set from your assigned showroom. Cannot be changed manually. Not field-level required (would break generic test fixtures on this shared doctype); enforced instead in retail_suite_core.showroom.showroom_service.require_showroom_before_submit."
  },
  {
   "doctype": "Custom Field",
@@ -273,11 +267,10 @@
   "fieldtype": "Link",
   "options": "Branch",
   "insert_after": "company",
-  "reqd": 1,
   "in_list_view": 1,
   "in_standard_filter": 1,
   "allow_on_submit": 0,
-  "description": "Automatically set from your assigned showroom. Cannot be changed manually."
+  "description": "Automatically set from your assigned showroom. Cannot be changed manually. Not field-level required (would break generic test fixtures on this shared doctype); enforced instead in retail_suite_core.showroom.showroom_service.require_showroom_before_submit."
  },
  {
   "doctype": "Custom Field",
@@ -288,11 +281,10 @@
   "fieldtype": "Link",
   "options": "Branch",
   "insert_after": "company",
-  "reqd": 1,
   "in_list_view": 1,
   "in_standard_filter": 1,
   "allow_on_submit": 0,
-  "description": "Automatically set from your assigned showroom. Cannot be changed manually."
+  "description": "Automatically set from your assigned showroom. Cannot be changed manually. Not field-level required (would break generic test fixtures on this shared doctype); enforced instead in retail_suite_core.showroom.showroom_service.require_showroom_before_submit."
  },
  {
   "doctype": "Custom Field",
@@ -303,11 +295,10 @@
   "fieldtype": "Link",
   "options": "Branch",
   "insert_after": "company",
-  "reqd": 1,
   "in_list_view": 1,
   "in_standard_filter": 1,
   "allow_on_submit": 0,
-  "description": "Automatically set from your assigned showroom. Cannot be changed manually."
+  "description": "Automatically set from your assigned showroom. Cannot be changed manually. Not field-level required (would break generic test fixtures on this shared doctype); enforced instead in retail_suite_core.showroom.showroom_service.require_showroom_before_submit."
  },
  {
   "doctype": "Custom Field",

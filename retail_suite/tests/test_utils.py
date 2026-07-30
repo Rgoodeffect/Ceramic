@@ -1,6 +1,6 @@
 """Shared test-data helpers. Not a test module itself (no Test* classes) -
 factored out because nearly every retail_suite test needs a Branch, a
-showroom-restricted User, a ceramic Item with an Sq Meter price, a
+showroom-restricted User, a ceramic Item with an Square Meter price, a
 Customer, or a Supplier, and repeating that setup in every test file would
 drift out of sync over time.
 """
@@ -41,6 +41,10 @@ def ensure_item(item_code: str, area_per_box: float = 1.5) -> str:
 				"item_group": "All Item Groups",
 				"stock_uom": "Box",
 				"custom_area_per_box": area_per_box,
+				# Item Price validation requires any priced UOM other than
+				# stock_uom to be registered here first, with a conversion
+				# factor back to the stock UOM (1 Square Meter = 1/area_per_box Box).
+				"uoms": [{"uom": "Square Meter", "conversion_factor": round(1 / area_per_box, 6)}],
 			}
 		).insert(ignore_permissions=True)
 	else:
@@ -59,7 +63,7 @@ def ensure_price(item_code: str, price_list: str, rate: float) -> str:
 			}
 		).insert(ignore_permissions=True)
 
-	existing = frappe.db.exists("Item Price", {"item_code": item_code, "price_list": price_list, "uom": "Sq Meter"})
+	existing = frappe.db.exists("Item Price", {"item_code": item_code, "price_list": price_list, "uom": "Square Meter"})
 	if existing:
 		frappe.db.set_value("Item Price", existing, "price_list_rate", rate)
 	else:
@@ -68,7 +72,7 @@ def ensure_price(item_code: str, price_list: str, rate: float) -> str:
 				"doctype": "Item Price",
 				"item_code": item_code,
 				"price_list": price_list,
-				"uom": "Sq Meter",
+				"uom": "Square Meter",
 				"selling": 1,
 				"price_list_rate": rate,
 			}

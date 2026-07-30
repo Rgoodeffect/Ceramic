@@ -139,10 +139,19 @@ whole design:
    List/Item Price (no custom pricing engine).**
    - Item: stock UOM = sales UOM = **"Box"** (integer, matches physical
      delivery and real warehouse counts).
-   - Item Price records are created in Price Lists with UOM = **"Sq
-     Meter"** — this is where "Retail / Wholesale / Project / VIP"
-     price-per-m² lives, using ERPNext's existing per-UOM pricing,
-     untouched.
+   - Item Price records are created in Price Lists with UOM = **"Square
+     Meter"** (ERPNext's standard UOM name — not "Sq Meter", a name that
+     doesn't exist and slipped into an earlier draft of this doc and the
+     code; a live-bench test run caught it) — this is where "Retail /
+     Wholesale / Project / VIP" price-per-m² lives, using ERPNext's
+     existing per-UOM pricing, untouched. ERPNext's own Item Price
+     validation additionally requires "Square Meter" to be registered on
+     the Item's own `uoms` child table (with a conversion factor back to
+     the Box stock UOM: `1 Square Meter = 1/area_per_box Box`) before any
+     Item Price in that UOM will save — also only surfaced by running
+     against a real site (`erpnext.stock.doctype.item_price.item_price.
+     validate_item`). Every place this app creates a ceramic Item (demo
+     data, tests) must add that `uoms` row.
    - Quotation Item / Sales Invoice Item / Delivery Note Item get two
      custom fields: `custom_required_area_sqm` (input) and
      `custom_delivered_area_sqm` (read-only, computed).
@@ -205,7 +214,7 @@ Address, Contact, User Permission.
 
 | DocType | Field (fieldname) | Type | Notes |
 |---|---|---|---|
-| Branch (= "Showroom") | `custom_showroom_code` | Select (VF/AS/AT, extensible) | unique |
+| Branch (= "Showroom") | `custom_showroom_code` | Data, not `reqd` | uniqueness enforced in `showroom_service.validate_showroom_code`, not a DB constraint. **Not** a Select: a live-bench test run showed Frappe auto-defaults every blank Select field on a new document to its first option (`frappe/model/create_new.py`), so every Branch saved without explicitly choosing a code silently collided on "VF"; Select also can't grow past a fixed option list, blocking a 4th+ showroom. Not `reqd` either, same reasoning as `Item.custom_area_per_box` (Branch is a shared standard doctype other modules may create test/dependency records against). |
 | Branch | `custom_address` | Link → Address | |
 | Branch | `custom_phone`, `custom_email` | Data | |
 | Branch | `custom_letter_head` | Link → Letter Head | auto-selected on print, never user-chosen |
@@ -214,7 +223,7 @@ Address, Contact, User Permission.
 | Item | `custom_width`, `custom_height`, `custom_thickness` | Float (mm) | |
 | Item | `custom_finish`, `custom_color`, `custom_collection`, `custom_series` | Data/Select | |
 | Item | `custom_country_of_origin` | Link → Country | reuse standard Country doctype |
-| Item | `custom_area_per_box` | Float | **required**, drives all calculation |
+| Item | `custom_area_per_box` | Float | drives all calculation; validated at point of use by the Calculation Engine, **not** field-level `reqd` (see live-bench fix log below - `reqd` on every Item broke both ERPNext's own test fixtures and any non-ceramic item) |
 | Item | `custom_pieces_per_box` | Int | |
 | Item | `custom_show_in_pos`, `custom_featured_product` | Check | |
 | Item | `custom_display_sequence` | Int | |
@@ -297,13 +306,14 @@ Permission` mechanism (§1.3‑2) except where marked "All showrooms".
 |---|---|---|---|---|---|---|
 | Customer | C,R,W | R,W | – | – | R | R (All) |
 | Quotation | C,R,W,Submit | R,W,Submit,Cancel | – | – | R | R (All) |
-| Sales Invoice | C,R,Submit | R,Submit,Cancel(approve) | – | – | R,W | R (All) |
+| Sales Invoice | C,R,W,Submit | R,W,Submit,Cancel(approve) | – | – | R,W | R (All) |
 | Delivery Note | R (own) | R | R,W,Submit | – | – | R (All) |
 | Supplier Availability Confirmation | C,R,W | R | – | R,W | R | R (All) |
 | Supplier Delivery Order | C,R,W,Submit | R,Submit,Cancel(approve) | – | R,W | R | R (All) |
 | Purchase Invoice | – | – | – | C,R,W | R,W,Submit | R (All) |
 | Payment Entry | C,R | R | – | – | R,W,Submit | R (All) |
 | Item / Price List | R | R | R | R | R | R (All) |
+| Account | R | R | – | R | C,R,W,Delete | R |
 | Supplier | R | R | – | C,R,W | R | R (All) |
 | Branch (Showroom) | R (own) | R (own) | R (own) | R (own) | R (own) | C,R,W (All) |
 | Retail Suite Settings | – | – | – | – | – | R,W (System Manager: full) |
@@ -311,6 +321,34 @@ Permission` mechanism (§1.3‑2) except where marked "All showrooms".
 | Executive Dashboard / Cross-showroom comparison | – | – | – | – | – | R |
 
 Notes:
+- **`submit`/`cancel` in a Custom DocPerm require `write` too, in this
+  Frappe version.** `Document.submit()`/`cancel()` just flip `docstatus`
+  and call the plain `save()` path, which unconditionally checks `write`
+  permission before it ever gets to a submit/cancel-specific check
+  (`document.py: _save -> check_permission("write", "save")`) - every
+  standard ERPNext role that can submit something (`Sales User`,
+  `Accounts User`, ...) is defined with `write: 1` alongside `submit: 1`
+  for exactly this reason. The original `Sales Invoice` grants for
+  Salesperson/Showroom Manager set `submit: 1` with `write: 0` (matching
+  the *business* intent of "can submit their own draft but not freely
+  edit it") and failed outright the first time a real bench actually
+  tried to submit one; fixed by granting `write: 1` there too. The
+  business-level "salesperson shouldn't edit a submitted invoice" intent
+  still holds regardless, since submitted documents are immutable in
+  Frappe by design (`docstatus != 0`) independent of the `write` DocPerm.
+- **Account read permission is not optional plumbing.** A live-bench test
+  run showed that without it, `Sales Invoice`/`Purchase Invoice` saves
+  fail outright for every custom role with
+  `PermissionError: User don't have permissions to select/read this
+  account` - `accounts_controller.set_payment_schedule` resolves the
+  party's default receivable/payable `Account` on every save, and a
+  brand-new custom Role has zero permissions on any doctype until granted
+  one explicitly (unlike ERPNext's own built-in `Sales User`/`Purchase
+  User`/`Accounts User` roles, which ship with exactly this grant - see
+  `erpnext/accounts/doctype/account/account.json`). Granted read-only to
+  Salesperson/Showroom Manager/Purchasing User/Company Owner (mirroring
+  `Sales User`/`Purchase User`) and full CRUD to Accounts User (mirroring
+  `Accounts User`).
 - "Approve" actions (discount approval, cancellation, return approval) are
   gated inside `services/` via a role check (`Showroom Manager`/`Company
   Owner`) rather than raw DocType permission, matching Part 3's approval
@@ -441,7 +479,7 @@ Phase 11 notes:
   throughout) so re-running it is safe.
 - It builds the three showrooms **using the spec's own example names**
   (Ahmed→مجموعة الفيتوري, Mohamed→الأساس, Ali→Athar from Part 3), one demo
-  user per role, a 3-item ceramic catalog with Sq Meter Item Prices on the
+  user per role, a 3-item ceramic catalog with Square Meter Item Prices on the
   standard "Standard Selling" price list, and - critically - **runs one
   worked example of each fulfillment path through the real service layer**
   (`quotation_service`, `sales_service`, `availability_confirmation_service`,

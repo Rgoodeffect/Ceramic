@@ -39,19 +39,19 @@ def get_item_area_per_box(item_code: str) -> float:
 
 
 def get_item_price_per_sqm(item_code: str, price_list: str) -> float:
-	"""Look up the Sq Meter price from the standard Item Price / Price List - never a
+	"""Look up the Square Meter price from the standard Item Price / Price List - never a
 	custom pricing engine (spec: "Use ERPNext Price List. Do not create custom pricing
 	engine.")."""
 	if not price_list:
 		frappe.throw(_("A price list is required to price item {0}.").format(item_code))
 	price_list_rate = frappe.db.get_value(
 		"Item Price",
-		{"item_code": item_code, "price_list": price_list, "uom": "Sq Meter", "selling": 1},
+		{"item_code": item_code, "price_list": price_list, "uom": "Square Meter", "selling": 1},
 		"price_list_rate",
 	)
 	if price_list_rate is None:
 		frappe.throw(
-			_("No Sq Meter price found for item {0} in price list {1}.").format(item_code, price_list),
+			_("No Square Meter price found for item {0} in price list {1}.").format(item_code, price_list),
 			frappe.ValidationError,
 		)
 	return price_list_rate
@@ -61,7 +61,7 @@ def calculate_row(item_code: str, required_area_sqm: float, price_list: str) -> 
 	"""Full calculation for one Quotation/Sales Invoice item row.
 
 	Returns boxes, the area actually delivered, the per-box rate translated
-	from the Sq Meter price list, and the line amount - all derived from the
+	from the Square Meter price list, and the line amount - all derived from the
 	single required-area input and the item's configured Area Per Box.
 	"""
 	area_per_box = get_item_area_per_box(item_code)
@@ -94,7 +94,7 @@ def apply_to_item_row(row, price_list: str) -> None:
 	row.custom_delivered_area_sqm = result["delivered_area_sqm"]
 
 
-def validate_item_rows(doc) -> None:
+def validate_item_rows(doc, method=None) -> None:
 	"""`validate` doc_event body for Quotation and Sales Invoice (Phase 5).
 
 	Recomputes every ceramic item row from its required area so manual Desk

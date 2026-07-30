@@ -103,6 +103,11 @@ class TestCalculationService(FrappeTestCase):
 					"item_group": "All Item Groups",
 					"stock_uom": "Box",
 					"custom_area_per_box": area_per_box,
+					# Item Price validation (erpnext.stock.doctype.item_price)
+					# requires any priced UOM other than stock_uom to be
+					# registered here first, with a conversion factor back to
+					# the stock UOM (1 Square Meter = 1/area_per_box Box).
+					"uoms": [{"uom": "Square Meter", "conversion_factor": round(1 / area_per_box, 6)}],
 				}
 			).insert(ignore_permissions=True)
 		else:
@@ -121,7 +126,7 @@ class TestCalculationService(FrappeTestCase):
 				}
 			).insert(ignore_permissions=True)
 		existing = frappe.db.exists(
-			"Item Price", {"item_code": item_code, "price_list": price_list, "uom": "Sq Meter"}
+			"Item Price", {"item_code": item_code, "price_list": price_list, "uom": "Square Meter"}
 		)
 		if existing:
 			frappe.db.set_value("Item Price", existing, "price_list_rate", rate)
@@ -131,7 +136,7 @@ class TestCalculationService(FrappeTestCase):
 					"doctype": "Item Price",
 					"item_code": item_code,
 					"price_list": price_list,
-					"uom": "Sq Meter",
+					"uom": "Square Meter",
 					"selling": 1,
 					"price_list_rate": rate,
 				}

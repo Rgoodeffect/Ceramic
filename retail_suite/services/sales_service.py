@@ -68,13 +68,13 @@ def create_sales_invoice_from_quotation(quotation_name: str, supply_source_by_it
 	return invoice
 
 
-def validate_supply_sources(sales_invoice) -> None:
+def validate_supply_sources(sales_invoice, method=None) -> None:
 	"""`validate` doc_event body (wired in Phase 5): every item needs a supply source."""
 	for row in sales_invoice.items:
 		_assert_valid_supply_source(row.custom_supply_source, row.item_code, row_idx=row.idx)
 
 
-def validate_supplier_confirmation_before_submit(sales_invoice) -> None:
+def validate_supplier_confirmation_before_submit(sales_invoice, method=None) -> None:
 	"""`before_submit` doc_event body (wired in Phase 5).
 
 	Spec Part 5/12: a Sales Invoice line sourced from a Supplier cannot be

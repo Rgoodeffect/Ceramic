@@ -18,7 +18,7 @@ class TestSupplierDeliveryService(FrappeTestCase):
 		self.supplier = test_utils.ensure_supplier("_Test SDS Supplier")
 
 	def _submitted_invoice_and_confirmation(self):
-		with frappe.set_user(self.user):
+		with self.set_user(self.user):
 			confirmation = availability_confirmation_service.record_confirmation(
 				supplier=self.supplier,
 				showroom=self.branch,
@@ -38,7 +38,7 @@ class TestSupplierDeliveryService(FrappeTestCase):
 
 	def test_create_from_sales_invoice(self):
 		invoice, confirmation = self._submitted_invoice_and_confirmation()
-		with frappe.set_user(self.user):
+		with self.set_user(self.user):
 			order = supplier_delivery_service.create_from_sales_invoice(
 				sales_invoice_name=invoice.name,
 				supplier_availability_confirmation_name=confirmation.name,
@@ -60,7 +60,7 @@ class TestSupplierDeliveryService(FrappeTestCase):
 		handed - a second, still-Pending confirmation for the same item must
 		not be accepted just because submission itself succeeded."""
 		invoice, _confirmed = self._submitted_invoice_and_confirmation()
-		with frappe.set_user(self.user):
+		with self.set_user(self.user):
 			pending = availability_confirmation_service.record_confirmation(
 				supplier=self.supplier,
 				showroom=self.branch,

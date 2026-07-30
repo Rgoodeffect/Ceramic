@@ -65,7 +65,7 @@ def search_items(search_term: str = "", price_list: str | None = None, limit: in
 				{
 					"item_code": item["item_code"],
 					"price_list": price_list,
-					"uom": "Sq Meter",
+					"uom": "Square Meter",
 					"selling": 1,
 				},
 				"price_list_rate",

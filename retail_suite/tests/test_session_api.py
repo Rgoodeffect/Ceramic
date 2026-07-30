@@ -22,14 +22,14 @@ class TestSessionApi(FrappeTestCase):
 			).insert(ignore_permissions=True)
 
 	def test_returns_assigned_showroom_for_restricted_user(self):
-		with frappe.set_user(self.user):
+		with self.set_user(self.user):
 			envelope = get_session_context()
 		self.assertTrue(envelope["success"])
 		self.assertEqual(envelope["data"]["showroom"], self.branch)
 		self.assertFalse(envelope["data"]["is_unrestricted"])
 
 	def test_unrestricted_for_administrator(self):
-		with frappe.set_user("Administrator"):
+		with self.set_user("Administrator"):
 			envelope = get_session_context()
 		self.assertTrue(envelope["success"])
 		self.assertTrue(envelope["data"]["is_unrestricted"])

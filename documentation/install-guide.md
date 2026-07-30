@@ -84,7 +84,7 @@ For every ceramic/porcelain item you sell, set on the Item:
   `custom_collection`, `custom_series`
 - `custom_show_in_pos` = 1 to make it appear in the POS product grid
 - Stock/Sales UOM = **Box**
-- An Item Price on your selling Price List with **UOM = Sq Meter** - this
+- An Item Price on your selling Price List with **UOM = Square Meter** - this
   is where the price-per-square-meter actually lives (spec: reuse ERPNext
   Price List, no custom pricing engine)
 

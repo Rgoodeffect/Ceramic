@@ -14,7 +14,7 @@ class TestAvailabilityConfirmationService(FrappeTestCase):
 		self.supplier = test_utils.ensure_supplier("_Test ACS Supplier")
 
 	def test_record_confirmation_submits_by_default(self):
-		with frappe.set_user(self.user):
+		with self.set_user(self.user):
 			confirmation = availability_confirmation_service.record_confirmation(
 				supplier=self.supplier,
 				showroom=self.branch,
@@ -26,7 +26,7 @@ class TestAvailabilityConfirmationService(FrappeTestCase):
 		self.assertEqual(confirmation.confirmed_by, self.user)
 
 	def test_record_confirmation_rejects_invalid_status(self):
-		with frappe.set_user(self.user), self.assertRaises(frappe.ValidationError):
+		with self.set_user(self.user), self.assertRaises(frappe.ValidationError):
 			availability_confirmation_service.record_confirmation(
 				supplier=self.supplier,
 				showroom=self.branch,
@@ -36,7 +36,7 @@ class TestAvailabilityConfirmationService(FrappeTestCase):
 			)
 
 	def test_record_confirmation_can_stay_draft(self):
-		with frappe.set_user(self.user):
+		with self.set_user(self.user):
 			confirmation = availability_confirmation_service.record_confirmation(
 				supplier=self.supplier,
 				showroom=self.branch,

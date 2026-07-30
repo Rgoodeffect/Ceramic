@@ -7,13 +7,15 @@ for made-up demo companies/showrooms/customers. Run explicitly instead:
 
 Everything here is idempotent (checks existence before creating) so it can
 be run more than once safely. It builds one company, the three showrooms
-from the spec, one demo user per role, a small ceramic catalog with Sq
+from the spec, one demo user per role, a small ceramic catalog with Square
 Meter pricing, and a worked example of both fulfillment paths (Company
 Warehouse and Supplier) so the whole business workflow is visible end to
 end, not just isolated records.
 """
 
 from __future__ import annotations
+
+from contextlib import contextmanager
 
 import frappe
 from frappe.utils import add_days, today
@@ -24,6 +26,21 @@ from retail_suite.services import (
 	sales_service,
 	supplier_delivery_service,
 )
+
+
+@contextmanager
+def _as_user(user: str):
+	"""`frappe.set_user` is a plain function, not a context manager (unlike
+	`FrappeTestCase.set_user`, which this script cannot use since it isn't a
+	test) - it just mutates `frappe.session.user` and returns None. This
+	restores the previous session user afterwards."""
+	previous_user = frappe.session.user
+	frappe.set_user(user)
+	try:
+		yield
+	finally:
+		frappe.set_user(previous_user)
+
 
 COMPANY_NAME = "Ceramic Showrooms Co"
 COMPANY_ABBR = "CSC"
@@ -170,18 +187,22 @@ def _create_catalog() -> None:
 					"custom_area_per_box": area_per_box,
 					"custom_pieces_per_box": pieces,
 					"custom_show_in_pos": 1,
+					# Item Price validation requires any priced UOM other than
+					# stock_uom to be registered here first, with a conversion
+					# factor back to the stock UOM (1 Square Meter = 1/area_per_box Box).
+					"uoms": [{"uom": "Square Meter", "conversion_factor": round(1 / area_per_box, 6)}],
 				}
 			).insert(ignore_permissions=True)
 
 		if not frappe.db.exists(
-			"Item Price", {"item_code": item_code, "price_list": PRICE_LIST, "uom": "Sq Meter"}
+			"Item Price", {"item_code": item_code, "price_list": PRICE_LIST, "uom": "Square Meter"}
 		):
 			frappe.get_doc(
 				{
 					"doctype": "Item Price",
 					"item_code": item_code,
 					"price_list": PRICE_LIST,
-					"uom": "Sq Meter",
+					"uom": "Square Meter",
 					"selling": 1,
 					"price_list_rate": price,
 				}
@@ -285,7 +306,7 @@ def _create_sample_workflow(company: str, branches_by_code: dict, customers: lis
 	# Invoice field) purely as an idempotency check for this script; it has
 	# no other significance here.
 	if not frappe.db.exists("Sales Invoice", {"po_no": "DEMO-WAREHOUSE-PATH"}):
-		with frappe.set_user("ahmed@retailsuite.demo"):
+		with _as_user("ahmed@retailsuite.demo"):
 			quotation = quotation_service.create_quotation(
 				customer=customers[0],
 				showroom=vf,
@@ -306,7 +327,7 @@ def _create_sample_workflow(company: str, branches_by_code: dict, customers: lis
 
 	# --- Supplier path: Availability Confirmation -> Sales Invoice -> Supplier Delivery Order ---
 	if not frappe.db.exists("Sales Invoice", {"po_no": "DEMO-SUPPLIER-PATH"}):
-		with frappe.set_user("mohamed@retailsuite.demo"):
+		with _as_user("mohamed@retailsuite.demo"):
 			confirmation = availability_confirmation_service.record_confirmation(
 				supplier=supplier,
 				showroom=az,

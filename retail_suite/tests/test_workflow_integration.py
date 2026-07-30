@@ -39,7 +39,7 @@ class TestWorkflowIntegration(FrappeTestCase):
 		self.supplier = test_utils.ensure_supplier("_Test Workflow Supplier")
 
 	def test_full_quotation_to_supplier_delivery_workflow(self):
-		with frappe.set_user(self.salesperson):
+		with self.set_user(self.salesperson):
 			# Customer requires 2.8 m2 -> spec's own worked example (Part 6/13).
 			quotation = quotation_service.create_quotation(
 				customer=self.customer,
@@ -84,11 +84,11 @@ class TestWorkflowIntegration(FrappeTestCase):
 		self.assertEqual(delivery_order.supplier_availability_confirmation, confirmation.name)
 
 		# --- Final Security Validation (spec Part 13/14): showroom isolation ---
-		with frappe.set_user(self.other_salesperson):
+		with self.set_user(self.other_salesperson):
 			self.assertFalse(frappe.has_permission("Sales Invoice", doc=invoice.name))
 			self.assertFalse(frappe.has_permission("Supplier Delivery Order", doc=delivery_order.name))
 
 		# Company Owner sees everything, regardless of showroom.
-		with frappe.set_user(self.owner):
+		with self.set_user(self.owner):
 			self.assertTrue(frappe.has_permission("Sales Invoice", doc=invoice.name))
 			self.assertTrue(frappe.has_permission("Supplier Delivery Order", doc=delivery_order.name))

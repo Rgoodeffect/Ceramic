@@ -17,7 +17,7 @@ class TestQuotationService(FrappeTestCase):
 		self.customer = test_utils.ensure_customer("_Test QS Customer")
 
 	def test_create_quotation_computes_items_via_calculation_engine(self):
-		with frappe.set_user(self.user):
+		with self.set_user(self.user):
 			quotation = quotation_service.create_quotation(
 				customer=self.customer,
 				showroom=self.branch,
@@ -32,13 +32,13 @@ class TestQuotationService(FrappeTestCase):
 		self.assertEqual(quotation.custom_showroom, self.branch)
 
 	def test_create_quotation_rejects_empty_items(self):
-		with frappe.set_user(self.user), self.assertRaises(frappe.ValidationError):
+		with self.set_user(self.user), self.assertRaises(frappe.ValidationError):
 			quotation_service.create_quotation(
 				customer=self.customer, showroom=self.branch, items=[], price_list=self.price_list
 			)
 
 	def test_create_quotation_blocks_other_showroom(self):
-		with frappe.set_user(self.user), self.assertRaises(frappe.PermissionError):
+		with self.set_user(self.user), self.assertRaises(frappe.PermissionError):
 			quotation_service.create_quotation(
 				customer=self.customer,
 				showroom=self.other_branch,
