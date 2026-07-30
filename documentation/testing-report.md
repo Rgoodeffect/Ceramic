@@ -111,7 +111,7 @@ fixture helpers, introduced in Phase 12).
 | Workflow/business scenario testing | ✅ `test_workflow_integration.py`, **executed and passing**; `demo_data.py` additionally exercises both fulfillment paths against a live site |
 | Company Warehouse workflow test | ✅ full loop verified live - `demo_data.py`'s Quotation → Sales Invoice, then (by hand, at the deployment level, same as a real customer would) Item Defaults + opening stock + ERPNext's standard "Make → Delivery Note" mapping, submitted, with the Stock Ledger Entry confirming the deduction. Zero app code changes needed. |
 | UI testing (POS loads, search, cart, printing) | ✅ done - drove the POS with a real Chromium browser (Playwright) as a logged-in Retail Salesperson: search, add-to-cart with live box/area calculation, customer selection, and checkout into a real submitted Sales Invoice, then its print view. Found and fixed 5 more real bugs this surfaced (CSRF token plumbing, POS product filter defaulting the wrong way, QR code rendering as literal text, Letter Head computed but never shown, Payment Entry missing from the print showroom-field map) - see PLAN.md. |
-| Performance testing | ❌ not attempted - requires a populated real site under load, out of scope for this pass |
+| Performance testing | ✅ done, with caveats - see `performance-report.md`: 121 items + 498 real invoices seeded through the actual service layer at a flat 3.4-3.5/s with zero errors, single-operation latency all under ~200ms, and a concurrent HTTP load test (5/20/40 users) with zero errors at every level. Not a production capacity number - `bench serve` is a single-process dev server, not `gunicorn`/`nginx` - but a real, honest signal that nothing falls over or degrades badly under realistic volume. |
 | Print testing (logo, letterhead, RTL, totals, QR, A4) | ✅ done - verified in a real browser via `/printview` (Arabic RTL letterhead, correct field content per doctype) **and** in the actual exported PDF (`download_pdf`), inspected with `pypdf`. The PDF check caught a bug the browser preview couldn't: an SVG-based QR code rendered fine in-browser but was silently dropped by `wkhtmltopdf` (the real PDF engine); switched to PNG and confirmed a real embedded image in the re-downloaded PDF. |
 | Regression/User Acceptance Testing | ❌ not applicable yet - needs real users |
 
@@ -124,9 +124,14 @@ salesperson, the Company Warehouse path was completed through an actual
 Delivery Note and confirmed stock deduction, and print output was verified
 both in-browser and as an actually-downloaded, `pypdf`-inspected PDF file
 (RTL letterhead, a real embedded QR image, correct fields per doctype).
-Those were the acceptance gates this report used to call out as missing -
-none of them are missing anymore, and fourteen real, previously-invisible
-bugs were found and fixed getting there (see PLAN.md for each one, next to
-the design decision it corrects). What remains open: performance testing
-under real load, out of scope for what a single-session sandbox like this
-one can meaningfully exercise.
+Performance testing was also run under a realistic data volume (see
+`performance-report.md`) with zero errors at every concurrency level
+tested. Those were the acceptance gates this report used to call out as
+missing - none of them are missing anymore, and fourteen real,
+previously-invisible bugs were found and fixed getting there (see
+PLAN.md for each one, next to the design decision it corrects). What
+remains open is production-scale/production-infrastructure capacity
+testing specifically (thousands of records, a real `gunicorn`/`nginx`
+deployment, sustained soak testing) - out of scope for what a
+single-process sandbox like this one can meaningfully establish, and
+called out explicitly in `performance-report.md` rather than claimed.

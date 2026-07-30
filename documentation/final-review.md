@@ -150,3 +150,22 @@ Done in this pass, per `testing-report.md`:
    zero embedded images. Switched the QR code to PNG (still via
    `pyqrcode`); the re-downloaded PDF now has a real embedded 164×164
    image on the page, confirmed via `pypdf`'s XObject inspection.
+7. ✅ Performance tested under a realistic data volume - full details in
+   `performance-report.md`. 121 items and 498 Sales Invoices seeded
+   through the real `sales_service` (not raw SQL) at a flat 3.4-3.5/s
+   with zero errors; single-operation server-side latency for POS
+   search/dashboard/reports/permission-filtered lists all under ~200ms;
+   a concurrent HTTP load test at 5/20/40 simultaneous users against the
+   live POS search endpoint completed 650 total requests with **zero
+   errors** at every level. Explicitly *not* a production capacity
+   number - `bench serve` is a single-process dev server, not the
+   `gunicorn`/`nginx` setup a real deployment uses - but real, honest
+   evidence that nothing in the app's own logic falls over or degrades
+   badly under realistic volume and concurrency.
+
+All seven points from the previous "still open" list are now closed.
+Genuinely out of scope for any single sandboxed session: production-scale
+data volume (thousands of records, years of history), a real
+`gunicorn`/`nginx` capacity test, sustained soak testing, and live human
+user acceptance testing - see `performance-report.md`'s own "what this
+does and doesn't establish" section for the precise boundary.
