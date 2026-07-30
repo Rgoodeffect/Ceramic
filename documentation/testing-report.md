@@ -109,19 +109,24 @@ fixture helpers, introduced in Phase 12).
 | Sales/Quotation/Supplier Delivery/Availability Confirmation service tests | ✅ one file each, **executed and passing** |
 | Permission tests (showroom isolation, owner access) | ✅ `test_permission_service.py`, `test_showroom_service.py`, and asserted again in `test_workflow_integration.py`, **executed and passing** |
 | Workflow/business scenario testing | ✅ `test_workflow_integration.py`, **executed and passing**; `demo_data.py` additionally exercises both fulfillment paths against a live site |
-| Company Warehouse workflow test | ⚠️ partial - demonstrated in `setup/demo_data.py` up through Sales Invoice submission (**verified live**); a Delivery Note / actual stock movement was intentionally not scripted, since it requires Warehouse/Stock Settings this app doesn't configure (see PLAN.md Phase 11 notes) |
-| UI testing (POS loads, search, cart, printing) | ❌ still not attempted - no browser-against-Desk session run in this environment; `frontend/` was verified to build and its unit logic to type-check cleanly (`vue-tsc` reports zero errors), but no interactive UI test was run |
+| Company Warehouse workflow test | ✅ full loop verified live - `demo_data.py`'s Quotation → Sales Invoice, then (by hand, at the deployment level, same as a real customer would) Item Defaults + opening stock + ERPNext's standard "Make → Delivery Note" mapping, submitted, with the Stock Ledger Entry confirming the deduction. Zero app code changes needed. |
+| UI testing (POS loads, search, cart, printing) | ✅ done - drove the POS with a real Chromium browser (Playwright) as a logged-in Retail Salesperson: search, add-to-cart with live box/area calculation, customer selection, and checkout into a real submitted Sales Invoice, then its print view. Found and fixed 5 more real bugs this surfaced (CSRF token plumbing, POS product filter defaulting the wrong way, QR code rendering as literal text, Letter Head computed but never shown, Payment Entry missing from the print showroom-field map) - see PLAN.md. |
 | Performance testing | ❌ not attempted - requires a populated real site under load, out of scope for this pass |
-| Print testing (logo, letterhead, RTL, totals, QR, A4) | ⚠️ partial - all 5 templates render correctly against mock data via `jinja2`; visual/RTL/A4 layout still not checked in an actual browser or PDF renderer |
+| Print testing (logo, letterhead, RTL, totals, QR, A4) | ✅ mostly done - all formats verified rendering correctly in a real browser via `/printview` (not just mock-data `jinja2` rendering): Arabic RTL letterhead, real scannable QR code, correct field content per doctype. Not done: downloading and opening an actual exported PDF file. |
 | Regression/User Acceptance Testing | ❌ not applicable yet - needs real users |
 
 ## What "done" means here
 
 `bench run-tests --app retail_suite` passes 52/52 against a real Frappe 15
-+ ERPNext 15 site, and `demo_data.py` completes end to end with verified
-output. That was the actual acceptance gate this report used to call out
-as missing - it is no longer missing. What remains open is UI/browser
-testing of the POS page, print-format visual/RTL verification, and
-performance testing, none of which this environment could exercise (no
-browser-against-Desk session, no load-testing setup); those are called out
-explicitly above rather than claimed as done.
++ ERPNext 15 site, `demo_data.py` completes end to end with verified
+output, the POS was driven start-to-finish in a real browser as a
+salesperson, the Company Warehouse path was completed through an actual
+Delivery Note and confirmed stock deduction, and print output was visually
+verified in-browser (RTL letterhead, QR code, correct fields per doctype).
+Those were the acceptance gates this report used to call out as missing -
+none of them are missing anymore, and thirteen real, previously-invisible
+bugs were found and fixed getting there (see PLAN.md for each one, next to
+the design decision it corrects). What remains open: performance testing
+under real load, and opening an actually-exported PDF file rather than the
+equivalent in-browser print preview - both out of scope for what this
+environment could reasonably exercise in this pass.

@@ -22,7 +22,7 @@ rather than rounding everything up to "done."
 | Calculations work | ✅ Implemented and tested (executed) | `calculation_service.py`; all 5 spec Part 12 test cases pass, actually executed via `bench run-tests`, not just traced by hand. |
 | Quotation works | ✅ Implemented and tested (executed) | `quotation_service.py` + `test_quotation_service.py`. |
 | Sales Invoice works | ✅ Implemented and tested (executed) | `sales_service.py` + `test_sales_service.py`, including a real `Sales Invoice.submit()` against a live site (which is what surfaced the `write`-permission-for-submit bug - see testing-report.md). |
-| Company Warehouse workflow works | ⚠️ Partial, but the Sales Invoice half is now live-verified | `setup/demo_data.py`'s Company Warehouse path (Quotation → Sales Invoice, submitted) was run end to end on a real site and confirmed in the database. The next step - Sales Invoice → Delivery Note → stock deduction - still relies entirely on ERPNext's own standard stock functionality, which this app deliberately does not configure (Warehouse/Stock Settings are a per-deployment concern) - genuinely unexercised here. |
+| Company Warehouse workflow works | ✅ Verified live, full loop | `setup/demo_data.py`'s Quotation → Sales Invoice (submitted) ran on a real site. The remaining leg was then completed by hand at the deployment level, exactly as a real customer would: added `TILE-MILANO-WHITE-6060` to a company's Item Defaults with a default warehouse, gave it 50 boxes of opening stock via a Material Receipt Stock Entry, then used ERPNext's standard "Make → Delivery Note" mapping (`make_delivery_note`) against the existing Sales Invoice - **zero application code changes were needed**. The Delivery Note's warehouse auto-filled from the Item Default, `custom_delivered_area_sqm` carried across the mapped-doc copy correctly, and submitting it deducted stock exactly as expected (Bin qty 50 → 43, Stock Ledger Entry `actual_qty: -7`). Confirms the architectural choice to lean entirely on standard ERPNext stock functionality (spec: "Use standard ERPNext Stock functionality") was correct, and that Warehouse/Stock Settings genuinely are a one-time per-deployment setup step, not something this app needed to build. |
 | Supplier workflow works | ✅ Implemented and tested, full loop (executed) | Availability Confirmation → Sales Invoice (blocked without it, allowed with it) → Supplier Delivery Order, in `test_sales_service.py`, `test_supplier_delivery_service.py`, and `test_workflow_integration.py` - and separately end to end via `demo_data.py` on a live site (1 Supplier Availability Confirmation + 1 Supplier Delivery Order created and confirmed in the database). |
 | Reports work | ✅ Implemented and synced | 8 Script Reports (PLAN.md Phase 9), each explicitly showroom-scoped; confirmed present in the live site after migrate. |
 | Dashboards work | ✅ Implemented and synced | Showroom + Executive dashboards, Number Cards, Dashboard Charts - confirmed present with correct card/chart links in the live site's database after migrate (this is what caught the `{module}_dashboard` folder-naming requirement - see PLAN.md Phase 9). |
@@ -47,10 +47,12 @@ Note **2 boxes, no pricing**.
   (`ceramic_delivery_note.json`) references only `item_code`, `item_name`,
   `qty` - no rate/amount field appears anywhere in that template, checked
   by direct inspection.
-- ⚠️ The Delivery Note *document itself* was not produced end-to-end in
-  any test (same Company Warehouse/stock caveat as above) - the print
-  format's content was verified in isolation, not against a real generated
-  Delivery Note for this scenario.
+- ✅ A real Delivery Note (`MAT-DN-2026-00001`) was produced end-to-end
+  via ERPNext's standard "Make → Delivery Note" mapping against a live
+  Sales Invoice, submitted, and its print view rendered in a real browser:
+  Item Code / Item Name / Boxes Quantity only, no currency symbol or
+  price/rate/amount anywhere on the page (checked programmatically against
+  the rendered text, not just the template source).
 
 ## Final Security Validation
 
@@ -118,14 +120,26 @@ Done in this pass, per `testing-report.md`:
 2. ✅ Ran `bench --site <site> run-tests --app retail_suite` to a clean
    52/52 pass, and separately ran `demo_data.py` end to end with verified
    database output.
-
-Still open, in order of priority:
-
-3. Click through the POS as a real user in a browser against that site -
-   no browser-against-Desk session was available in this environment.
-4. Configure Warehouse/Stock Settings for a real company and complete the
-   Company Warehouse path through an actual Delivery Note and stock
-   deduction.
-5. Visually check the 5 print formats' A4 layout, RTL rendering, and QR
-   code output as real PDFs against real live documents, not just
-   rendered HTML strings against mock data.
+3. ✅ Clicked through the POS as a real user in a real Chromium browser
+   (Playwright) against a live site: logged in as a Retail Salesperson,
+   searched the ceramic catalog, added an item to cart with a live box/area
+   calculation, selected a customer, and completed checkout into a real,
+   submitted Sales Invoice. Found and fixed five more real bugs along the
+   way (CSRF token plumbing, a POS product-grid filter defaulting the
+   wrong way, a QR code that only ever rendered as literal text, a Letter
+   Head that was computed but never actually shown, and a missing
+   showroom-field entry for Payment Entry) - documented in PLAN.md.
+4. ✅ Configured Warehouse/Stock Settings for a real company (Item
+   Defaults + opening stock via a Material Receipt Stock Entry) and
+   completed the Company Warehouse path through an actual Delivery Note
+   and stock deduction - zero application code changes were needed,
+   confirming the "reuse standard ERPNext stock functionality" design
+   decision was correct.
+5. ✅ Visually checked print output as actually rendered in a browser (not
+   just template source): Sales Invoice, Delivery Note, and (implicitly,
+   same code path) the other 3 formats all show the correct Arabic RTL
+   letterhead, a real scannable QR code, and A4-styled layout via
+   Frappe's standard `/printview` route. Not done: exporting to an actual
+   PDF file and inspecting it (the `Get PDF` link was confirmed present
+   and pointing at the correct endpoint, but the PDF itself wasn't
+   downloaded and opened in this pass).
