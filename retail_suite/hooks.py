@@ -18,7 +18,31 @@ app_license = "Proprietary"
 # --------
 # Populated as Roles, Custom Fields, Workspaces, Print Formats, Letter Heads
 # and Dashboards are added (Phases 2-3, 7, 9-10). See documentation/architecture/PLAN.md.
-fixtures = []
+fixtures = [
+	{
+		"doctype": "Custom Field",
+		"filters": [
+			["fieldname", "like", "custom_%"],
+			[
+				"dt",
+				"in",
+				[
+					"Branch",
+					"Item",
+					"Quotation",
+					"Quotation Item",
+					"Sales Invoice",
+					"Sales Invoice Item",
+					"Delivery Note",
+					"Delivery Note Item",
+					"Purchase Invoice",
+					"Payment Entry",
+					"User",
+				],
+			],
+		],
+	}
+]
 
 # Doc Events
 # ----------

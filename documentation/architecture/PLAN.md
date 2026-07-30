@@ -331,7 +331,7 @@ Notes:
 | Phase | Deliverable | Exit criteria | Status |
 |---|---|---|---|
 | 1. App scaffold | Hand-author `retail_suite` app tree (§1.1), `hooks.py`, `modules.txt` | Structure matches §1.1; importable as a Frappe app once placed in a real bench | ✅ done |
-| 2. Core doctypes & fixtures | `Supplier Delivery Order`, `Supplier Availability Confirmation`, `Retail Suite Settings`; Custom Fields from §2.2 as fixtures | JSON doctype defs + fixture files complete, self-consistent | pending |
+| 2. Core doctypes & fixtures | `Supplier Delivery Order`, `Supplier Availability Confirmation`, `Retail Suite Settings`; Custom Fields from §2.2 as fixtures | JSON doctype defs + fixture files complete, self-consistent | ✅ done |
 | 3. Roles & permissions | 6 custom Roles, DocPerm fixtures per §3, `permission_service.py` (query conditions + has_permission) | Permission matrix fully expressed in fixtures/code | pending |
 | 4. Calculation Engine & services | `CalculationService`, `SalesService`, `QuotationService`, `SupplierDeliveryService`, `AvailabilityConfirmationService` | Unit tests written for all 5 calculation test cases from spec Part 12 (ready to run once bench-installed) | pending |
 | 5. doc_events / validation hooks | Wire CalculationService + showroom enforcement into Quotation/Sales Invoice/Delivery Note/Purchase Invoice `validate` | Manual Desk entry and API entry produce identical results | pending |

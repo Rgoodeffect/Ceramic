@@ -1,0 +1,162 @@
+{
+ "actions": [],
+ "creation": "2026-07-30 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "default_company",
+  "default_currency",
+  "default_language",
+  "pos_default_price_list",
+  "discount_approval_limit",
+  "section_break_verticals",
+  "enable_ceramic",
+  "enable_kitchen",
+  "enable_sanitary_ware",
+  "column_break_verticals",
+  "enable_marble_granite",
+  "enable_furniture",
+  "enable_flooring",
+  "enable_building_materials",
+  "section_break_features",
+  "enable_supplier_delivery_workflow",
+  "enable_advanced_dashboard",
+  "column_break_features",
+  "enable_customer_portal"
+ ],
+ "fields": [
+  {
+   "fieldname": "default_company",
+   "fieldtype": "Link",
+   "label": "Default Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "default_currency",
+   "fieldtype": "Link",
+   "label": "Default Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "default_language",
+   "fieldtype": "Link",
+   "label": "Default Language",
+   "options": "Language"
+  },
+  {
+   "fieldname": "pos_default_price_list",
+   "fieldtype": "Link",
+   "label": "POS Default Price List",
+   "options": "Price List"
+  },
+  {
+   "default": "0",
+   "description": "Maximum discount percentage a Showroom Manager may approve without further escalation.",
+   "fieldname": "discount_approval_limit",
+   "fieldtype": "Percent",
+   "label": "Discount Approval Limit"
+  },
+  {
+   "fieldname": "section_break_verticals",
+   "fieldtype": "Section Break",
+   "label": "Enabled Verticals"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_ceramic",
+   "fieldtype": "Check",
+   "label": "Ceramic Showroom"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_kitchen",
+   "fieldtype": "Check",
+   "label": "Kitchen Showrooms"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_sanitary_ware",
+   "fieldtype": "Check",
+   "label": "Sanitary Ware"
+  },
+  {
+   "fieldname": "column_break_verticals",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_marble_granite",
+   "fieldtype": "Check",
+   "label": "Marble and Granite"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_furniture",
+   "fieldtype": "Check",
+   "label": "Furniture"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_flooring",
+   "fieldtype": "Check",
+   "label": "Flooring"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_building_materials",
+   "fieldtype": "Check",
+   "label": "Building Materials"
+  },
+  {
+   "fieldname": "section_break_features",
+   "fieldtype": "Section Break",
+   "label": "Feature Flags"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_supplier_delivery_workflow",
+   "fieldtype": "Check",
+   "label": "Enable Supplier Delivery Workflow"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_advanced_dashboard",
+   "fieldtype": "Check",
+   "label": "Enable Advanced Dashboard"
+  },
+  {
+   "fieldname": "column_break_features",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_customer_portal",
+   "fieldtype": "Check",
+   "label": "Enable Customer Portal"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-07-30 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Retail Suite Core",
+ "name": "Retail Suite Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1
+  },
+  {
+   "role": "Retail Company Owner",
+   "read": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
