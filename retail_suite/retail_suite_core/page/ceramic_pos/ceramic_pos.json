@@ -1,0 +1,35 @@
+{
+ "content": null,
+ "creation": "2026-07-30 00:00:00.000000",
+ "doctype": "Page",
+ "icon": "point-of-sale",
+ "idx": 0,
+ "modified": "2026-07-30 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Retail Suite Core",
+ "name": "ceramic-pos",
+ "owner": "Administrator",
+ "page_name": "ceramic-pos",
+ "restrict_to_domain": "",
+ "roles": [
+  {
+   "doctype": "Has Role",
+   "role": "Retail Salesperson"
+  },
+  {
+   "doctype": "Has Role",
+   "role": "Retail Showroom Manager"
+  },
+  {
+   "doctype": "Has Role",
+   "role": "Retail Company Owner"
+  },
+  {
+   "doctype": "Has Role",
+   "role": "System Manager"
+  }
+ ],
+ "standard": "Yes",
+ "system_page": 0,
+ "title": "Ceramic Showroom POS"
+}

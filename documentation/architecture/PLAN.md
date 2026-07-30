@@ -351,7 +351,7 @@ Notes:
 | 5. doc_events / validation hooks | Wire CalculationService + showroom enforcement into Quotation/Sales Invoice/Delivery Note/Purchase Invoice `validate` | Manual Desk entry and API entry produce identical results | ✅ done |
 | 6. API layer | Whitelisted endpoints in `api/` wrapping the services, uniform `{success,message,data,errors}` response | Each service method has a thin corresponding endpoint | ✅ done |
 | 7. Workspace & Desk integration | `Retail Suite` Workspace with cards/shortcuts; per-showroom workspace variant | Appears natively in Desk per Part 2/9 | ✅ done (per-showroom variants deferred to Phase 11, see note below) |
-| 8. Ceramic POS (Vue 3 + Frappe UI + TS + Pinia) | Product search/cards, cart with live box/area calc, checkout → Quotation/Sales Invoice | POS mounted as a Frappe Page under Retail Suite, no standalone app | pending |
+| 8. Ceramic POS (Vue 3 + Frappe UI + TS + Pinia) | Product search/cards, cart with live box/area calc, checkout → Quotation/Sales Invoice | POS mounted as a Frappe Page under Retail Suite, no standalone app | ✅ done - `npm run build` verified passing |
 | 9. Reports & Dashboards | Query/Script Reports from Part 7; Showroom + Executive dashboards, Number Cards, Charts | Each report answers a named business question, permission-scoped | pending |
 | 10. Print Formats & Letter Heads | Quotation, Sales Invoice, Delivery Note, Supplier Delivery Order, Payment Receipt; per-showroom Letter Head auto-select; QR code | Matches Part 8's "must/must-not display" rules per document | pending |
 | 11. Demo data fixtures | Company, 3 Branches (VF/AS/AT), sample customers/items/suppliers/transactions | Demonstrates full workflow end to end | pending |
@@ -369,6 +369,35 @@ natural home for, since Phase 8's POS cannot function without them:
 (live cart calculation before a line is committed to a document), and
 `api/customer.quick_create_customer` (minimum-fields customer creation using
 the standard Customer/Contact/Address doctypes).
+
+Phase 8 notes:
+- **`get_session_context` API added** (`retail_suite/api/session.py`): the
+  POS needs to know the current user's showroom (to submit with every sale)
+  without ever letting them type or pick a different one (spec Part 3). It
+  wraps `permission_service.get_user_showroom()`/`is_unrestricted()`.
+- **Frappe Page, not a website route.** The spec requires the POS live
+  inside Desk, not as a standalone app. The Vue SPA (`frontend/`) is built
+  by Vite and mounted by a minimal Page controller
+  (`retail_suite_core/page/ceramic_pos/ceramic_pos.js`) via
+  `frappe.require()`, rather than served through a `www/*.html` website
+  route (which frappe-ui's own `buildConfig`/`jinjaBootData` vite plugins
+  assume by default - both are disabled in `frontend/vite.config.ts`).
+- **Build output format is IIFE, not Vite's default ES modules.**
+  `frappe.require()` injects a classic `<script src>` tag, which can't
+  execute bare `import`/`export` syntax; IIFE bundles everything (CSS
+  included, self-injected at runtime) into one `ceramic_pos.js` with a
+  fixed filename the Page controller references directly.
+- **`npm run build` is the real correctness gate, not `vue-tsc`.**
+  `frappe-ui` (pre-1.0) ships its own uncompiled source, so a plain
+  `vue-tsc --noEmit` walks into its internals (icon components resolved via
+  a Vite-only virtual module) and reports ~150 errors that are entirely
+  inside `node_modules/frappe-ui` - verified zero errors under this
+  project's own `src/`. The build was run in this environment and passes.
+- The bundle is a build artifact (`retail_suite/public/frontend/`, gitignored)
+  regenerated via `cd frontend && npm install && npm run build` - not
+  something `bench build`/`install-app` can be assumed to trigger
+  automatically, so this is called out explicitly in the install guide
+  (Phase 13).
 
 Phase 7 note - per-showroom workspaces deferred to Phase 11: the spec's
 "مجموعة الفيتوري Workspace" example is *this customer's* branding/business

@@ -12,8 +12,10 @@ Architecture, DocType design, permission matrix, and implementation roadmap:
 
 ## Status
 
-Phase 1 (application structure) is scaffolded. See the roadmap in
-`documentation/architecture/PLAN.md` for what's implemented vs. planned.
+Phases 1-8 of the roadmap are complete (app scaffold, core doctypes,
+roles/permissions, calculation engine + services, validation hooks, API
+layer, Workspace, and the Ceramic POS). See
+`documentation/architecture/PLAN.md` for the full phase-by-phase status.
 
 ## Project layout
 
@@ -21,16 +23,18 @@ Phase 1 (application structure) is scaffolded. See the roadmap in
 retail_suite/                  Frappe app package
 ├── hooks.py                   App metadata, fixtures, doc_events, permission hooks
 ├── modules.txt                Frappe Module Defs (Retail Suite Core, Retail Suite Ceramic)
-├── retail_suite_core/         Generic retail engine: showroom, permissions, custom doctypes
+├── retail_suite_core/         Generic retail engine: showroom, permissions, custom doctypes,
+│                               the Retail Suite Workspace, and the ceramic-pos Page
 ├── retail_suite_ceramic/      Ceramic vertical: item extension, calculation engine
 ├── services/                  Business logic (Sales, Quotation, Supplier Delivery, ...)
 ├── api/                       Thin whitelisted endpoints calling services/
 ├── reports/                   Shared report query/helper logic
 ├── dashboards/                Shared dashboard helper logic
-├── fixtures/                  Exported Roles, Custom Fields, Workspaces, Print Formats, ...
+├── fixtures/                  Roles, Custom Fields, Custom DocPerm, Print Formats, ...
 ├── patches/                   Schema/data migrations
-├── public/pos/                Vue 3 + TypeScript + Pinia POS SPA (Frappe Page, not standalone)
+├── public/frontend/           Built POS assets (gitignored - see frontend/)
 └── tests/
+frontend/                      Vue 3 + TypeScript + Pinia + Frappe UI POS source (see frontend/README.md)
 documentation/                 Install, Admin, User, Developer, API, and Architecture guides
 ```
 
@@ -46,6 +50,9 @@ install it into a real bench with:
 bench get-app retail_suite <this-repo-url>
 bench --site <site-name> install-app retail_suite
 bench migrate
+
+# Build the POS frontend (not run automatically by bench build/install-app):
+cd apps/retail_suite/frontend && npm install && npm run build
 ```
 
 ## License
