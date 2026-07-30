@@ -349,7 +349,7 @@ Notes:
 | 3. Roles & permissions | 6 custom Roles, DocPerm fixtures per §3, `permission_service.py` (query conditions + has_permission) | Permission matrix fully expressed in fixtures/code | ✅ done |
 | 4. Calculation Engine & services | `CalculationService`, `SalesService`, `QuotationService`, `SupplierDeliveryService`, `AvailabilityConfirmationService` | Unit tests written for all 5 calculation test cases from spec Part 12 (ready to run once bench-installed) | ✅ done |
 | 5. doc_events / validation hooks | Wire CalculationService + showroom enforcement into Quotation/Sales Invoice/Delivery Note/Purchase Invoice `validate` | Manual Desk entry and API entry produce identical results | ✅ done |
-| 6. API layer | Whitelisted endpoints in `api/` wrapping the services, uniform `{success,message,data,errors}` response | Each service method has a thin corresponding endpoint | pending |
+| 6. API layer | Whitelisted endpoints in `api/` wrapping the services, uniform `{success,message,data,errors}` response | Each service method has a thin corresponding endpoint | ✅ done |
 | 7. Workspace & Desk integration | `Retail Suite` Workspace with cards/shortcuts; per-showroom workspace variant | Appears natively in Desk per Part 2/9 | pending |
 | 8. Ceramic POS (Vue 3 + Frappe UI + TS + Pinia) | Product search/cards, cart with live box/area calc, checkout → Quotation/Sales Invoice | POS mounted as a Frappe Page under Retail Suite, no standalone app | pending |
 | 9. Reports & Dashboards | Query/Script Reports from Part 7; Showroom + Executive dashboards, Number Cards, Charts | Each report answers a named business question, permission-scoped | pending |
@@ -362,6 +362,13 @@ Notes:
 Each phase is built, self-reviewed, and reported before moving to the next
 (per the spec's "work feature by feature" rule) rather than generated all
 at once.
+
+Phase 6 also added three read-only endpoints the services layer has no
+natural home for, since Phase 8's POS cannot function without them:
+`api/catalog.search_items` (product search/cards), `api/calculation.preview_row`
+(live cart calculation before a line is committed to a document), and
+`api/customer.quick_create_customer` (minimum-fields customer creation using
+the standard Customer/Contact/Address doctypes).
 
 ---
 
