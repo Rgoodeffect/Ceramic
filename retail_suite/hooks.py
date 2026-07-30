@@ -92,10 +92,12 @@ fixtures = [
 _SHOWROOM_LOCK = "retail_suite.retail_suite_core.showroom.showroom_service.apply_showroom_default_and_lock"
 _CALC_MODULE = "retail_suite.retail_suite_ceramic.calculation_service"
 _SALES_SERVICE = "retail_suite.services.sales_service"
+_PRINT_SERVICE = "retail_suite.retail_suite_core.printing.print_service.apply_print_context"
 
 doc_events = {
 	"Quotation": {
 		"validate": [_SHOWROOM_LOCK, f"{_CALC_MODULE}.validate_item_rows"],
+		"before_print": [_PRINT_SERVICE],
 	},
 	"Sales Invoice": {
 		"validate": [
@@ -104,11 +106,12 @@ doc_events = {
 			f"{_SALES_SERVICE}.validate_supply_sources",
 		],
 		"before_submit": [f"{_SALES_SERVICE}.validate_supplier_confirmation_before_submit"],
+		"before_print": [_PRINT_SERVICE],
 	},
-	"Delivery Note": {"validate": _SHOWROOM_LOCK},
-	"Purchase Invoice": {"validate": _SHOWROOM_LOCK},
-	"Payment Entry": {"validate": _SHOWROOM_LOCK},
-	"Supplier Delivery Order": {"validate": _SHOWROOM_LOCK},
+	"Delivery Note": {"validate": _SHOWROOM_LOCK, "before_print": [_PRINT_SERVICE]},
+	"Purchase Invoice": {"validate": _SHOWROOM_LOCK, "before_print": [_PRINT_SERVICE]},
+	"Payment Entry": {"validate": _SHOWROOM_LOCK, "before_print": [_PRINT_SERVICE]},
+	"Supplier Delivery Order": {"validate": _SHOWROOM_LOCK, "before_print": [_PRINT_SERVICE]},
 	"Supplier Availability Confirmation": {"validate": _SHOWROOM_LOCK},
 }
 

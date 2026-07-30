@@ -353,7 +353,7 @@ Notes:
 | 7. Workspace & Desk integration | `Retail Suite` Workspace with cards/shortcuts; per-showroom workspace variant | Appears natively in Desk per Part 2/9 | ✅ done (per-showroom variants deferred to Phase 11, see note below) |
 | 8. Ceramic POS (Vue 3 + Frappe UI + TS + Pinia) | Product search/cards, cart with live box/area calc, checkout → Quotation/Sales Invoice | POS mounted as a Frappe Page under Retail Suite, no standalone app | ✅ done - `npm run build` verified passing |
 | 9. Reports & Dashboards | Query/Script Reports from Part 7; Showroom + Executive dashboards, Number Cards, Charts | Each report answers a named business question, permission-scoped | ✅ done (see notes) |
-| 10. Print Formats & Letter Heads | Quotation, Sales Invoice, Delivery Note, Supplier Delivery Order, Payment Receipt; per-showroom Letter Head auto-select; QR code | Matches Part 8's "must/must-not display" rules per document | pending |
+| 10. Print Formats & Letter Heads | Quotation, Sales Invoice, Delivery Note, Supplier Delivery Order, Payment Receipt; per-showroom Letter Head auto-select; QR code | Matches Part 8's "must/must-not display" rules per document | ✅ done - all 5 Jinja templates verified to actually render |
 | 11. Demo data fixtures | Company, 3 Branches (VF/AS/AT), sample customers/items/suppliers/transactions | Demonstrates full workflow end to end | pending |
 | 12. Tests | Unit (calculation, permission, service), integration (workflow), documented as pending real-bench execution | Test files complete and readable; execution deferred to real bench per environment note | pending |
 | 13. Documentation | Install, Admin, Salesperson, Developer, Architecture, API, Upgrade guides | One doc per audience, no placeholders | pending |
@@ -398,6 +398,30 @@ Phase 8 notes:
   something `bench build`/`install-app` can be assumed to trigger
   automatically, so this is called out explicitly in the install guide
   (Phase 13).
+
+Phase 10 notes:
+- **Letter Head auto-selection and QR population happen at `before_print`**
+  (`retail_suite_core/printing/print_service.py`), not at save time:
+  `_apply_letter_head` sets `doc.letter_head` from `Branch.custom_letter_head`
+  for the doctype's showroom field, and `_apply_qr_code` sets a new
+  `custom_qr_code` field (Barcode fieldtype, `fixtures/custom_field.json`)
+  on Quotation/Sales Invoice/Payment Entry to `"{doctype}:{name}"`. Neither
+  ever lets the user pick a Letter Head manually (spec Part 8).
+- **Supplier Delivery Order gained a `letter_head` field** (amending its
+  own DocType JSON from Phase 2 - it's our own doctype, so this is a plain
+  field addition, not a foreign-doctype customization).
+- **All 5 Jinja print format templates were actually rendered** (not just
+  JSON-validated) against representative mock documents using the real
+  `jinja2` package available in this sandbox, catching real template bugs
+  (an early draft's `doc.items` collided with a `dict.items()` stand-in in
+  the *test* harness, not real Frappe - fixed by using a plain-attribute
+  stand-in matching how `frappe.model.document.Document` actually stores
+  field values). Each format's "must/must-not display" list from spec
+  Part 8 is enforced directly in the template (e.g. Delivery Note and
+  Supplier Delivery Order never reference a price/amount field at all).
+- Barcode/"Custom" Number Card-style caveat applies here too: the exact
+  Print Format/Custom Field("Barcode") schema is best-effort without a live
+  bench; verify QR rendering on first real `bench migrate`.
 
 Phase 9 notes:
 - **8 Script Reports** (`retail_suite_core/report/` for generic ones,

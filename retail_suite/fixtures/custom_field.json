@@ -409,5 +409,44 @@
   "options": "Branch",
   "insert_after": "user_type",
   "description": "Operational users are restricted to this showroom via an automatically managed User Permission record. Leave blank for Company Owner / System Manager (unrestricted access to all showrooms)."
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Quotation-custom_qr_code",
+  "dt": "Quotation",
+  "fieldname": "custom_qr_code",
+  "label": "QR Code",
+  "fieldtype": "Barcode",
+  "insert_after": "custom_showroom",
+  "read_only": 1,
+  "print_hide": 0,
+  "no_copy": 1,
+  "description": "Populated automatically at print time (retail_suite_core.printing.print_service)."
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Sales Invoice-custom_qr_code",
+  "dt": "Sales Invoice",
+  "fieldname": "custom_qr_code",
+  "label": "QR Code",
+  "fieldtype": "Barcode",
+  "insert_after": "custom_showroom",
+  "read_only": 1,
+  "print_hide": 0,
+  "no_copy": 1,
+  "description": "Populated automatically at print time (retail_suite_core.printing.print_service)."
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Payment Entry-custom_qr_code",
+  "dt": "Payment Entry",
+  "fieldname": "custom_qr_code",
+  "label": "QR Code",
+  "fieldtype": "Barcode",
+  "insert_after": "custom_showroom",
+  "read_only": 1,
+  "print_hide": 0,
+  "no_copy": 1,
+  "description": "Populated automatically at print time (retail_suite_core.printing.print_service)."
  }
 ]

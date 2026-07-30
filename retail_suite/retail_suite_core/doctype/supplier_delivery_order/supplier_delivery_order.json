@@ -21,6 +21,7 @@
   "items",
   "section_break_remarks",
   "remarks",
+  "letter_head",
   "amended_from"
  ],
  "fields": [
@@ -122,6 +123,16 @@
    "fieldname": "remarks",
    "fieldtype": "Small Text",
    "label": "Remarks"
+  },
+  {
+   "description": "Automatically set from the showroom at print time - not user-selectable.",
+   "fieldname": "letter_head",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Letter Head",
+   "options": "Letter Head",
+   "print_hide": 1,
+   "read_only": 1
   },
   {
    "fieldname": "amended_from",

@@ -1,0 +1,20 @@
+{
+ "align_labels_right": 0,
+ "creation": "2026-07-30 00:00:00.000000",
+ "css": ".retail-print{font-family:'Helvetica Neue',Arial,sans-serif;color:#1f2937;font-size:12px}.retail-print .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1f2937;padding-bottom:12px;margin-bottom:16px}.retail-print .doc-title{font-size:20px;font-weight:700;margin:0}.retail-print .muted{color:#6b7280;font-size:11px}.retail-print .two-col{display:flex;justify-content:space-between;gap:24px}.retail-print table.items{width:100%;border-collapse:collapse;margin:12px 0}.retail-print table.items th{background:#f3f4f6;text-align:left;padding:6px 8px;font-size:10px;text-transform:uppercase;border-bottom:1px solid #d1d5db}.retail-print table.items td{padding:6px 8px;font-size:11px;border-bottom:1px solid #e5e7eb}.retail-print .section-title{font-size:10px;text-transform:uppercase;color:#6b7280;margin-top:16px;margin-bottom:4px}",
+ "disabled": 0,
+ "doc_type": "Supplier Delivery Order",
+ "doctype": "Print Format",
+ "font": "Default",
+ "html": "<div class=\"retail-print\">\n  <!-- Spec Part 2/5/8: no selling price, invoice value, or profit information ever appears on this document. -->\n  <div class=\"header\">\n    <div>\n      <p class=\"doc-title\">Supplier Delivery Order</p>\n      <p class=\"muted\">{{ doc.name }} &middot; {{ doc.get_formatted(\"delivery_date\") }}</p>\n    </div>\n    <div style=\"text-align:right\">\n      <p class=\"muted\">Status</p>\n      <p>{{ doc.status }}</p>\n    </div>\n  </div>\n\n  <div class=\"two-col\">\n    <div>\n      <div class=\"section-title\">Supplier</div>\n      <p>{{ doc.supplier_name if doc.get(\"supplier_name\") else frappe.db.get_value(\"Supplier\", doc.supplier, \"supplier_name\") }}</p>\n    </div>\n    <div>\n      <div class=\"section-title\">Customer</div>\n      <p>\n        {{ frappe.db.get_value(\"Customer\", doc.customer, \"customer_name\") }}<br>\n        {% if doc.customer_address %}{{ frappe.db.get_value(\"Address\", doc.customer_address, \"address_line1\") or \"\" }}{% endif %}\n      </p>\n    </div>\n  </div>\n\n  <div class=\"section-title\">Items</div>\n  <table class=\"items\">\n    <thead>\n      <tr>\n        <th>Item Code</th>\n        <th>Item Name</th>\n        <th>Boxes Quantity</th>\n        <th>Supplier Notes</th>\n      </tr>\n    </thead>\n    <tbody>\n      {% for row in doc.items %}\n      <tr>\n        <td>{{ row.item_code }}</td>\n        <td>{{ row.item_name }}</td>\n        <td>{{ row.boxes_qty }}</td>\n        <td>{{ row.supplier_notes or \"\" }}</td>\n      </tr>\n      {% endfor %}\n    </tbody>\n  </table>\n\n  {% if doc.remarks %}\n  <div class=\"section-title\">Remarks</div>\n  <p>{{ doc.remarks }}</p>\n  {% endif %}\n</div>\n",
+ "line_breaks": 0,
+ "modified": "2026-07-30 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Retail Suite Core",
+ "name": "Ceramic Supplier Delivery Order",
+ "owner": "Administrator",
+ "print_format_type": "Jinja",
+ "raw_printing": 0,
+ "show_section_headings": 0,
+ "standard": "Yes"
+}
