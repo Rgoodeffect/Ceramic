@@ -225,7 +225,7 @@ Address, Contact, User Permission.
 | Item | `custom_country_of_origin` | Link → Country | reuse standard Country doctype |
 | Item | `custom_area_per_box` | Float | drives all calculation; validated at point of use by the Calculation Engine, **not** field-level `reqd` (see live-bench fix log below - `reqd` on every Item broke both ERPNext's own test fixtures and any non-ceramic item) |
 | Item | `custom_pieces_per_box` | Int | |
-| Item | `custom_show_in_pos`, `custom_featured_product` | Check | |
+| Item | `custom_show_in_pos`, `custom_featured_product` | Check | `custom_show_in_pos` defaults to **0** (opt-in), not 1 - a live-bench browser test showed a default of 1 puts every Item in the system, including every ERPNext test fixture, into the Ceramic POS product grid |
 | Item | `custom_display_sequence` | Int | |
 | Item | `custom_catalog_pdf` | Attach | |
 | Item | `custom_warranty_information` | Small Text | |
@@ -502,10 +502,67 @@ Phase 10 notes:
 - **Letter Head auto-selection and QR population happen at `before_print`**
   (`retail_suite_core/printing/print_service.py`), not at save time:
   `_apply_letter_head` sets `doc.letter_head` from `Branch.custom_letter_head`
-  for the doctype's showroom field, and `_apply_qr_code` sets a new
-  `custom_qr_code` field (Barcode fieldtype, `fixtures/custom_field.json`)
-  on Quotation/Sales Invoice/Payment Entry to `"{doctype}:{name}"`. Neither
-  ever lets the user pick a Letter Head manually (spec Part 8).
+  for the doctype's showroom field. Neither ever lets the user pick a
+  Letter Head manually (spec Part 8).
+- **`_apply_qr_code` generates an actual scannable QR image, not a plain
+  string** - found broken by loading a real invoice's print view in a
+  browser and seeing the literal text `Sales Invoice:ACC-SINV-2026-00003`
+  where a QR code should be. `custom_qr_code`'s Barcode fieldtype has no
+  server-side rendering at all - `doc.get_formatted()` on a Barcode field
+  just returns its raw value; the scannable graphic normally only exists
+  client-side, drawn by the Desk form control's JS barcode library, which
+  never runs during a server-rendered print/PDF. Fixed the same way
+  Frappe's own two-factor-auth QR code does it
+  (`frappe.twofactor.get_qr_svg_code`): build an SVG with `pyqrcode`
+  (already a transitive Frappe dependency, confirmed installed in this
+  bench's venv), base64-encode it into a `data:image/svg+xml;base64,...`
+  URI, and store *that* in `custom_qr_code` - `Barcode` maps to a
+  `longtext` DB column (`frappe.database.mariadb.database.type_map`), so
+  it holds the (much longer) data URI without issue. The 3 print formats
+  that show a QR code were updated to render
+  `<img src="{{ doc.custom_qr_code }}">` directly instead of
+  `{{ doc.get_formatted("custom_qr_code") }}`.
+- **The Letter Head was computed but never actually rendered anywhere -**
+  a much bigger miss than the QR one, and just as invisible without a real
+  browser: `_apply_letter_head` correctly set `doc.letter_head`, but every
+  one of these 5 Print Format records has `"standard": "Yes"`. In
+  `frappe.www.printview.get_html_and_style`, that flag makes Frappe treat
+  the format's `html` field as the *entire* page template and skip
+  `templates/print_formats/standard.html` - the only place that ever does
+  `{% if letter_head and not no_letterhead %}<div class="letter-head">
+  {{ letter_head }}</div>{% endif %}` (see `standard_macros.html`'s
+  `add_header` macro). Our own five `html` templates never referenced
+  `letter_head` at all, so the computed value simply had nowhere to go.
+  Fixed by adding that exact same conditional block (copied verbatim from
+  Frappe's own macro) to the top of all 5 templates. Confirmed live:
+  `custom_showroom` → `Branch.custom_letter_head` → this block now
+  actually shows the showroom's Arabic company name and address.
+- **`Payment Entry` was missing from this module's own
+  `SHOWROOM_FIELD_BY_DOCTYPE`**, even though it's one of the 7
+  showroom-scoped doctypes everywhere else in the app (see
+  `permission_service.SHOWROOM_FIELD_BY_DOCTYPE`, `showroom_service`) and
+  is in this file's own `QR_FIELD_DOCTYPES`. Its Payment Receipt print
+  format got a QR code but never a letter head. Added.
+- **A `bench migrate` gotcha worth knowing before touching any of these
+  files again**: Frappe only re-imports a module-JSON record (Print
+  Format, Report, Workspace, Dashboard, Dashboard Chart, Number Card,
+  Page, ...) when the `modified` timestamp *inside the JSON file* is newer
+  than what's already in the site's database
+  (`frappe.modules.import_file.import_file_by_path`). Every one of these
+  fixtures in this repo was authored with the same static placeholder,
+  `"modified": "2026-07-30 00:00:00.000000"` - fine for a fresh install
+  (nothing in the DB yet to compare against), but editing the file content
+  *after* a site has already synced it once, then running a plain
+  `bench migrate`, silently does nothing - confirmed while chasing the QR
+  fix above, which took a live `bench migrate` with no errors and no
+  effect before this was understood. The fix in the moment was
+  `bench execute frappe.reload_doc --kwargs '{"module": "...",
+  "dt": "...", "dn": "...", "force": True}'` (the `bench reload-doc` CLI
+  command exists too, but its `--force` wiring didn't take effect in this
+  environment - calling `frappe.reload_doc` directly did). The durable fix
+  is to bump each file's `modified` timestamp whenever its content
+  actually changes, the same convention Frappe's own core doctype JSON
+  files follow.
 - **Supplier Delivery Order gained a `letter_head` field** (amending its
   own DocType JSON from Phase 2 - it's our own doctype, so this is a plain
   field addition, not a foreign-doctype customization).
@@ -518,9 +575,10 @@ Phase 10 notes:
   field values). Each format's "must/must-not display" list from spec
   Part 8 is enforced directly in the template (e.g. Delivery Note and
   Supplier Delivery Order never reference a price/amount field at all).
-- Barcode/"Custom" Number Card-style caveat applies here too: the exact
-  Print Format/Custom Field("Barcode") schema is best-effort without a live
-  bench; verify QR rendering on first real `bench migrate`.
+- Verified live: all 5 print formats render correctly via `/printview` on a
+  real site, letter head auto-selects per showroom, and (after the
+  `_apply_qr_code` fix above) the QR image actually renders as a scannable
+  graphic, not text.
 
 Phase 9 notes:
 - **8 Script Reports** (`retail_suite_core/report/` for generic ones,

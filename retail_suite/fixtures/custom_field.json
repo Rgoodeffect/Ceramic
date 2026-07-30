@@ -188,9 +188,10 @@
   "fieldname": "custom_show_in_pos",
   "label": "Show In POS",
   "fieldtype": "Check",
-  "default": "1",
+  "default": "0",
   "insert_after": "custom_pieces_per_box",
-  "in_standard_filter": 1
+  "in_standard_filter": 1,
+  "description": "Opt-in, not opt-out: a default of 1 meant every Item in the system - including every one of ERPNext's own generic test fixtures, and any future non-ceramic item in a multi-vertical deployment - showed up in the Ceramic Showroom POS by default, found by actually loading the POS page in a browser against a real site (see PLAN.md)."
  },
  {
   "doctype": "Custom Field",

@@ -27,9 +27,19 @@ class TestPrintService(FrappeTestCase):
 		self.assertEqual(quotation.letter_head, self.letter_head)
 
 	def test_qr_code_is_populated_for_supported_doctypes(self):
+		"""custom_qr_code must be an actual scannable image, not the raw
+		reference string - a Barcode field's get_formatted() has no
+		server-side rendering, so a print format can only ever show a real
+		QR code if this method builds one itself (see print_service.py's
+		_apply_qr_code docstring; found by loading a real print view in a
+		browser and seeing literal text where a QR code should be)."""
 		quotation = frappe.get_doc({"doctype": "Quotation", "name": "QTN-TEST-0001"})
 		print_service.apply_print_context(quotation)
-		self.assertEqual(quotation.custom_qr_code, "Quotation:QTN-TEST-0001")
+		self.assertTrue(quotation.custom_qr_code.startswith("data:image/svg+xml;base64,"))
+		import base64
+
+		svg = base64.b64decode(quotation.custom_qr_code.split(",", 1)[1]).decode()
+		self.assertIn("<svg", svg)
 
 	def test_qr_code_is_skipped_for_unsupported_doctypes(self):
 		delivery_note = frappe.get_doc({"doctype": "Delivery Note", "name": "DN-TEST-0001"})
