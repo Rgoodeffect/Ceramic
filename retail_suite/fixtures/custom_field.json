@@ -329,6 +329,18 @@
  },
  {
   "doctype": "Custom Field",
+  "name": "Quotation Item-custom_price_per_sqm",
+  "dt": "Quotation Item",
+  "fieldname": "custom_price_per_sqm",
+  "label": "Price Per m²",
+  "fieldtype": "Currency",
+  "options": "currency",
+  "read_only": 1,
+  "insert_after": "rate",
+  "description": "The true per-square-meter price (rate is per-box internally, since qty is in boxes) - what CLAUDE.md Part 4/8 calls \"Price Per m²\". Computed by CalculationService, never edited directly."
+ },
+ {
+  "doctype": "Custom Field",
   "name": "Sales Invoice Item-custom_required_area_sqm",
   "dt": "Sales Invoice Item",
   "fieldname": "custom_required_area_sqm",
@@ -352,6 +364,18 @@
   "insert_after": "custom_required_area_sqm",
   "in_list_view": 1,
   "description": "boxes × area per box. This is what the customer is invoiced for."
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Sales Invoice Item-custom_price_per_sqm",
+  "dt": "Sales Invoice Item",
+  "fieldname": "custom_price_per_sqm",
+  "label": "Price Per m²",
+  "fieldtype": "Currency",
+  "options": "currency",
+  "read_only": 1,
+  "insert_after": "rate",
+  "description": "The true per-square-meter price (rate is per-box internally, since qty is in boxes) - what CLAUDE.md Part 4/8 calls \"Price Per m²\". Computed by CalculationService, never edited directly."
  },
  {
   "doctype": "Custom Field",

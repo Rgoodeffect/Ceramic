@@ -92,6 +92,16 @@ def apply_to_item_row(row, price_list: str) -> None:
 	row.uom = "Box"
 	row.rate = result["rate_per_box"]
 	row.custom_delivered_area_sqm = result["delivered_area_sqm"]
+	# `rate` has to stay the per-box figure - qty is in boxes, and ERPNext
+	# computes amount = qty x rate, so that's what keeps the accounting
+	# correct. But every customer-facing surface (POS cart, spec Part 4/8's
+	# print formats) is supposed to show the true price *per square meter*,
+	# which is a different number (rate / area_per_box) - found by a real
+	# printed invoice showing "$86.40 / m²" for an item actually priced at
+	# $60/m² (86.40 was 60 x 1.44 area_per_box, the per-box rate, mislabeled).
+	# Stored separately here rather than recomputed in the template so print
+	# formats don't need to know about area_per_box at all.
+	row.custom_price_per_sqm = result["price_per_sqm"]
 
 
 def validate_item_rows(doc, method=None) -> None:
