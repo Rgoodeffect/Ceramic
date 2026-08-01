@@ -6,6 +6,9 @@ import frappe
 from frappe import _
 
 from retail_suite.retail_suite_ceramic import calculation_service
+from retail_suite.retail_suite_core.doctype.retail_suite_settings.retail_suite_settings import (
+	get_default_company,
+)
 from retail_suite.retail_suite_core.permissions import permission_service
 
 
@@ -21,6 +24,7 @@ def create_quotation(customer: str, showroom: str, items: list[dict], price_list
 		frappe.throw(_("At least one item is required to create a quotation."))
 
 	quotation = frappe.new_doc("Quotation")
+	quotation.company = get_default_company()
 	quotation.quotation_to = "Customer"
 	quotation.party_name = customer
 	quotation.custom_showroom = showroom

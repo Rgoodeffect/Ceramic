@@ -6,6 +6,9 @@ import frappe
 from frappe import _
 
 from retail_suite.retail_suite_ceramic import calculation_service
+from retail_suite.retail_suite_core.doctype.retail_suite_settings.retail_suite_settings import (
+	get_default_company,
+)
 from retail_suite.retail_suite_core.permissions import permission_service
 
 SUPPLIER_SOURCE = "Supplier"
@@ -23,6 +26,7 @@ def create_sales_invoice(customer: str, showroom: str, items: list[dict], price_
 		frappe.throw(_("At least one item is required to create a sales invoice."))
 
 	invoice = frappe.new_doc("Sales Invoice")
+	invoice.company = get_default_company()
 	invoice.customer = customer
 	invoice.custom_showroom = showroom
 	invoice.selling_price_list = price_list

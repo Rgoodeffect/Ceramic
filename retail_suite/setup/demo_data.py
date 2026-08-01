@@ -100,19 +100,50 @@ def create_demo_data():
 
 
 def _create_company() -> str:
-	if frappe.db.exists("Company", COMPANY_NAME):
-		return COMPANY_NAME
-	# NOTE: country/currency are demo placeholders - a real deployment should
-	# use the customer's actual country and operating currency.
-	frappe.get_doc(
+	if not frappe.db.exists("Company", COMPANY_NAME):
+		# NOTE: country/currency are demo placeholders - a real deployment should
+		# use the customer's actual country and operating currency.
+		frappe.get_doc(
+			{
+				"doctype": "Company",
+				"company_name": COMPANY_NAME,
+				"abbr": COMPANY_ABBR,
+				"default_currency": CURRENCY,
+				"country": DEMO_COUNTRY,
+			}
+		).insert(ignore_permissions=True)
+
+	# Company.insert() auto-generates the Standard Template chart of
+	# accounts (see erpnext Company.validate_coa_input/create_default_accounts)
+	# and that does set a default Receivable account, but *not* a default
+	# Income Account, Cost Center, or Round Off Account - found one at a time
+	# by actually running the demo Sales Invoice below through validate() and
+	# submit(), each failing on the next missing default in turn. A normal
+	# ERPNext deployment fills these in by hand once during onboarding (Company
+	# form); the Standard Template always names the leaf accounts this way,
+	# so it's safe to wire up here rather than leaving the demo company
+	# half-configured.
+	frappe.db.set_value(
+		"Company",
+		COMPANY_NAME,
 		{
-			"doctype": "Company",
-			"company_name": COMPANY_NAME,
-			"abbr": COMPANY_ABBR,
-			"default_currency": CURRENCY,
-			"country": DEMO_COUNTRY,
-		}
-	).insert(ignore_permissions=True)
+			"default_income_account": f"Sales - {COMPANY_ABBR}",
+			"cost_center": f"Main - {COMPANY_ABBR}",
+			"round_off_account": f"Round Off - {COMPANY_ABBR}",
+			"round_off_cost_center": f"Main - {COMPANY_ABBR}",
+		},
+	)
+
+	# quotation_service/sales_service stamp every document they create with
+	# Retail Suite Settings.default_company (see retail_suite_settings.py) -
+	# found missing by actually running this script: it built the company
+	# but never told the app to use it, so every quotation/invoice below
+	# failed validate() with "Please specify Company" against a blank
+	# default. Always re-applied (not just on first insert) so a re-run
+	# after someone points default_company elsewhere still demos correctly.
+	frappe.db.set_single_value("Retail Suite Settings", "default_company", COMPANY_NAME)
+	frappe.db.set_single_value("Retail Suite Settings", "default_currency", CURRENCY)
+	frappe.db.set_single_value("Retail Suite Settings", "pos_default_price_list", PRICE_LIST)
 	return COMPANY_NAME
 
 
