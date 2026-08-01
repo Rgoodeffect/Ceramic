@@ -63,18 +63,41 @@ fixtures = [
 		],
 	},
 	{
+		# Filtered by doctype (parent), not by role, and that's deliberate:
+		# the moment a site has *any* Custom DocPerm row for a doctype,
+		# Frappe's permission resolution (frappe.permissions.get_valid_perms)
+		# stops consulting that doctype's standard, built-in DocPerm rows
+		# entirely - for every role, not just the ones a new row was added
+		# for. Filtering this fixture by our own role names only exports our
+		# 6 new rows per doctype, silently dropping the standard rows
+		# (Stock User/Stock Manager/Sales User/Delivery User/Delivery
+		# Manager on Delivery Note, etc.) that a fresh install still needs -
+		# found by logging in as a user with only System Manager (no retail
+		# role) and hitting "You need the 'create' permission on Delivery
+		# Note" on a real site, then discovering every standard role had
+		# silently lost all access to every doctype in this list the moment
+		# our roles were added to it. Fixed by re-copying the original
+		# DocPerm rows into Custom DocPerm (frappe.permissions.copy_perms,
+		# the same thing "Customize Form" does under the hood) before
+		# exporting, so this fixture is the *complete* permission set for
+		# each doctype - standard roles plus ours - not just the diff.
 		"doctype": "Custom DocPerm",
 		"filters": [
 			[
-				"role",
+				"parent",
 				"in",
 				[
-					"Retail Salesperson",
-					"Retail Showroom Manager",
-					"Retail Warehouse User",
-					"Retail Purchasing User",
-					"Retail Accounts User",
-					"Retail Company Owner",
+					"Account",
+					"Branch",
+					"Customer",
+					"Delivery Note",
+					"Item",
+					"Payment Entry",
+					"Price List",
+					"Purchase Invoice",
+					"Quotation",
+					"Sales Invoice",
+					"Supplier",
 				],
 			]
 		],
