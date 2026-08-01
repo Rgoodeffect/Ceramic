@@ -79,6 +79,32 @@ fixtures = [
 			]
 		],
 	},
+	{
+		# Makes each Ceramic print format the one a plain "Print" click uses,
+		# not just something reachable from the format picker - without this,
+		# printing a Quotation/Sales Invoice/Delivery Note/Payment Entry falls
+		# back to Frappe's own generic layout (raw QR data URI as text, no
+		# letterhead, ERPNext's full field set including things like "Grant
+		# Commission") - exactly the "default ERPNext forms" look spec Part 8
+		# says these documents must not have. Found by printing a real invoice
+		# without explicitly picking a format in the browser. This is the same
+		# Property Setter `frappe.printing...print_format.make_default()`
+		# creates when a user clicks "Set as Default" in the Desk UI - done as
+		# a fixture here so it's already true on install, for every doctype
+		# this app owns a Ceramic print format for except Supplier Delivery
+		# Order (a custom doctype, so `default_print_format` is set directly
+		# on its own DocType JSON instead - no foreign doctype to avoid
+		# touching there).
+		"doctype": "Property Setter",
+		"filters": [
+			["property", "=", "default_print_format"],
+			[
+				"doc_type",
+				"in",
+				["Quotation", "Sales Invoice", "Delivery Note", "Payment Entry"],
+			],
+		],
+	},
 ]
 
 # Doc Events
