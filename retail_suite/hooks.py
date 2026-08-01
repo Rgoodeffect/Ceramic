@@ -143,16 +143,24 @@ _SHOWROOM_REQUIRE = "retail_suite.retail_suite_core.showroom.showroom_service.re
 _CALC_MODULE = "retail_suite.retail_suite_ceramic.calculation_service"
 _SALES_SERVICE = "retail_suite.services.sales_service"
 _PRINT_SERVICE = "retail_suite.retail_suite_core.printing.print_service.apply_print_context"
+# Also run at `validate` (after _SHOWROOM_LOCK, so the showroom field is
+# already set), not just `before_print` - see print_service.py's module
+# docstring for why: Desk's "Print" page pre-fills its Letter Head picker
+# from the document's own *saved* letter_head field, only falling back to
+# the site-wide default when that's empty, so the value has to actually be
+# saved, not just computed transiently for one print request.
+_LETTER_HEAD_DEFAULT = "retail_suite.retail_suite_core.printing.print_service.apply_letter_head_default"
 
 doc_events = {
 	"Quotation": {
-		"validate": [_SHOWROOM_LOCK, f"{_CALC_MODULE}.validate_item_rows"],
+		"validate": [_SHOWROOM_LOCK, _LETTER_HEAD_DEFAULT, f"{_CALC_MODULE}.validate_item_rows"],
 		"before_submit": [_SHOWROOM_REQUIRE],
 		"before_print": [_PRINT_SERVICE],
 	},
 	"Sales Invoice": {
 		"validate": [
 			_SHOWROOM_LOCK,
+			_LETTER_HEAD_DEFAULT,
 			f"{_CALC_MODULE}.validate_item_rows",
 			f"{_SALES_SERVICE}.validate_supply_sources",
 		],
@@ -160,21 +168,24 @@ doc_events = {
 		"before_print": [_PRINT_SERVICE],
 	},
 	"Delivery Note": {
-		"validate": _SHOWROOM_LOCK,
+		"validate": [_SHOWROOM_LOCK, _LETTER_HEAD_DEFAULT],
 		"before_submit": [_SHOWROOM_REQUIRE],
 		"before_print": [_PRINT_SERVICE],
 	},
 	"Purchase Invoice": {
-		"validate": _SHOWROOM_LOCK,
+		"validate": [_SHOWROOM_LOCK, _LETTER_HEAD_DEFAULT],
 		"before_submit": [_SHOWROOM_REQUIRE],
 		"before_print": [_PRINT_SERVICE],
 	},
 	"Payment Entry": {
-		"validate": _SHOWROOM_LOCK,
+		"validate": [_SHOWROOM_LOCK, _LETTER_HEAD_DEFAULT],
 		"before_submit": [_SHOWROOM_REQUIRE],
 		"before_print": [_PRINT_SERVICE],
 	},
-	"Supplier Delivery Order": {"validate": _SHOWROOM_LOCK, "before_print": [_PRINT_SERVICE]},
+	"Supplier Delivery Order": {
+		"validate": [_SHOWROOM_LOCK, _LETTER_HEAD_DEFAULT],
+		"before_print": [_PRINT_SERVICE],
+	},
 	"Supplier Availability Confirmation": {"validate": _SHOWROOM_LOCK},
 	"Branch": {
 		"validate": ["retail_suite.retail_suite_core.showroom.showroom_service.validate_showroom_code"]

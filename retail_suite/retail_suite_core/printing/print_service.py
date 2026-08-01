@@ -1,6 +1,26 @@
 """Print-time customization (spec Part 8): automatically select the Letter
 Head for the document's showroom - the user never manually picks one - and
 populate the QR code field. Wired via hooks.py `before_print`.
+
+`apply_letter_head_default` is *also* wired into `validate` (see hooks.py) -
+not just `before_print` - so the correct value is actually saved on the
+document, not only computed transiently for one print request. Found by
+actually printing two invoices from different showrooms via Desk's "Print"
+button (the embedded `/app/print/...` page, not the standalone `/printview`
+route both of these were previously verified against): its sidebar Letter
+Head dropdown pre-fills itself from `frm.doc.letter_head` - the value
+*saved* on the document - and only falls back to whatever Letter Head has
+`is_default=1` site-wide when that's empty (`frappe/printing/page/print/
+print.js:set_default_letterhead`). Since `before_print` alone never touched
+the saved value, every document's dropdown fell back to the same site-wide
+default letterhead - happened to be مجموعة الفيتوري's here - regardless of
+which showroom the document actually belonged to, and printing then sent
+that wrong pre-filled value back to the server as an explicit `letterhead`
+query param, which `frappe.www.printview.get_letter_head` prioritizes over
+the document's own field. The standalone `/printview` route never showed
+this bug because it has no such picker to pre-fill in the first place - it
+was `before_print` that had actually been verified in a browser before, not
+this second Desk-native entry point.
 """
 
 from __future__ import annotations
@@ -23,11 +43,11 @@ QR_FIELD_DOCTYPES = {"Quotation", "Sales Invoice", "Payment Entry"}
 
 
 def apply_print_context(doc, method=None, print_settings=None) -> None:
-	_apply_letter_head(doc)
+	apply_letter_head_default(doc)
 	_apply_qr_code(doc)
 
 
-def _apply_letter_head(doc) -> None:
+def apply_letter_head_default(doc, method=None) -> None:
 	fieldname = SHOWROOM_FIELD_BY_DOCTYPE.get(doc.doctype)
 	if not fieldname or not doc.meta.has_field("letter_head"):
 		return
