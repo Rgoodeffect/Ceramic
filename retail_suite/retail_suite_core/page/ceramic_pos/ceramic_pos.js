@@ -1,7 +1,7 @@
 frappe.pages["ceramic-pos"].on_page_load = function (wrapper) {
 	const page = frappe.ui.make_app_page({
 		parent: wrapper,
-		title: "Ceramic Showroom POS",
+		title: __("Ceramic Showroom POS"),
 		single_column: true,
 	});
 
