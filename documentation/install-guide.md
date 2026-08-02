@@ -40,6 +40,48 @@ without it, saving a Sales/Purchase Invoice fails outright. A standard
 automatically - it only needs calling out here because it's easy to miss
 if you're assembling a bench by hand.
 
+## 0.1. Optional: fuller Arabic translations
+
+ERPNext 15's own bundled Arabic translations are noticeably incomplete
+(spec Part 4/8 requires real Arabic RTL support throughout the Desk and
+print formats). The community app
+[`ibrahim317/erpnext-arabic-full-translation`](https://github.com/ibrahim317/erpnext-arabic-full-translation)
+fills most of that gap - verified on a real Frappe 15 bench, it covers the
+overwhelming majority of the Desk (navbar, sidebar, standard doctype
+fields, list views). It's independent of `retail_suite` - install it or
+not, nothing here depends on it - but is worth doing before a customer
+demo:
+
+```bash
+bench get-app https://github.com/ibrahim317/erpnext-arabic-full-translation
+bench --site <site-name> install-app arabic_translations
+bench install-arabic-translations --site <site-name>
+bench build
+```
+
+Two things worth knowing before relying on it:
+
+- **The app's own `after_install` hook is commented out** in its
+  `hooks.py` (`# after_install = "arabic_translations.install.after_install"`)
+  - installing it alone copies nothing. The explicit
+    `bench install-arabic-translations --site <site-name>` step above is
+    what actually copies the `ar.po`/`ar.csv` bundles into
+    frappe/erpnext/hrms; don't skip it.
+- **Its no-`--site` form is broken on this Frappe version**: running
+  bare `bench install-arabic-translations` (the form its own README
+  recommends for Docker image builds, to translate every app in the
+  environment before `bench build`) crashes with
+  `TypeError: get_all_apps() got an unexpected keyword argument
+  'with_internal'` - a version mismatch between that app and
+  `frappe.get_all_apps()`'s current signature, not a `retail_suite`
+  issue. The `--site <site-name>` form shown above sidesteps it entirely
+  (it calls `copy_locale_files()` directly instead of going through
+  `get_all_apps`), so use that form specifically.
+- Custom fields this app adds (`custom_required_area_sqm`,
+  `custom_delivered_area_sqm`, the `Showroom` field, etc.) have no Arabic
+  label from this pack and will keep showing in English - expected, not
+  a bug in either app.
+
 ## 1. Get the app onto your bench
 
 ```bash
