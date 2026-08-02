@@ -43,6 +43,22 @@ def create_sales_invoice(customer: str, showroom: str, items: list[dict], price_
 	return invoice
 
 
+def submit_sales_invoice(name: str):
+	"""Finalize a draft Sales Invoice (spec Part 4: "Create Invoice" completes the sale).
+
+	Kept as its own step, separate from `create_sales_invoice`, rather than
+	submitting inline there: `before_submit`'s supplier-confirmation gate
+	(`validate_supplier_confirmation_before_submit`) needs to be able to
+	reject a submit while still leaving the invoice created as a draft the
+	salesperson can come back to once availability is confirmed, not fail
+	the whole checkout.
+	"""
+	invoice = frappe.get_doc("Sales Invoice", name)
+	permission_service.assert_showroom_access(invoice.custom_showroom)
+	invoice.submit()
+	return invoice
+
+
 def create_sales_invoice_from_quotation(quotation_name: str, supply_source_by_item: dict[str, str]):
 	"""Convert an accepted Quotation into a Sales Invoice.
 

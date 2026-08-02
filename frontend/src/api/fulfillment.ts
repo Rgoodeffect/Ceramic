@@ -1,0 +1,17 @@
+import invoke from "./client";
+
+export function createPayment(
+	salesInvoice: string,
+	modeOfPayment?: string,
+): Promise<{ name: string }> {
+	return invoke<{ name: string }>("retail_suite.api.fulfillment.create_payment", {
+		sales_invoice: salesInvoice,
+		mode_of_payment: modeOfPayment,
+	});
+}
+
+export function createDeliveryNote(salesInvoice: string): Promise<{ name: string }> {
+	return invoke<{ name: string }>("retail_suite.api.fulfillment.create_delivery_note", {
+		sales_invoice: salesInvoice,
+	});
+}

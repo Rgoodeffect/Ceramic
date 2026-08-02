@@ -290,7 +290,7 @@
  {
   "amend": 0,
   "cancel": 0,
-  "create": 0,
+  "create": 1,
   "delete": 0,
   "docstatus": 0,
   "doctype": "Custom DocPerm",
@@ -298,7 +298,7 @@
   "export": 0,
   "if_owner": 0,
   "import": 0,
-  "modified": "2026-08-02 01:49:19.353478",
+  "modified": "2026-08-02 07:00:00.000000",
   "name": "Delivery Note-Retail Salesperson",
   "parent": "Delivery Note",
   "permlevel": 0,
@@ -308,8 +308,8 @@
   "role": "Retail Salesperson",
   "select": 0,
   "share": 0,
-  "submit": 0,
-  "write": 0
+  "submit": 1,
+  "write": 1
  },
  {
   "amend": 0,
@@ -562,7 +562,7 @@
   "export": 0,
   "if_owner": 0,
   "import": 0,
-  "modified": "2026-08-02 01:49:19.657084",
+  "modified": "2026-08-02 07:00:00.000000",
   "name": "Payment Entry-Retail Salesperson",
   "parent": "Payment Entry",
   "permlevel": 0,
@@ -572,8 +572,8 @@
   "role": "Retail Salesperson",
   "select": 0,
   "share": 0,
-  "submit": 0,
-  "write": 0
+  "submit": 1,
+  "write": 1
  },
  {
   "amend": 0,

@@ -21,6 +21,12 @@ export function createSalesInvoice(
 	});
 }
 
+export function submitSalesInvoice(salesInvoice: string): Promise<{ name: string; docstatus: number }> {
+	return invoke<{ name: string; docstatus: number }>("retail_suite.api.sales.submit_sales_invoice", {
+		sales_invoice: salesInvoice,
+	});
+}
+
 export function createSalesInvoiceFromQuotation(
 	quotation: string,
 	supplySourceByItem: Record<string, SupplySource>,

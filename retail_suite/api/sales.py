@@ -23,6 +23,13 @@ def create_sales_invoice(customer: str, showroom: str, items, price_list: str):
 
 @frappe.whitelist()
 @api_endpoint
+def submit_sales_invoice(sales_invoice: str):
+	doc = sales_service.submit_sales_invoice(sales_invoice)
+	return {"name": doc.name, "docstatus": doc.docstatus}
+
+
+@frappe.whitelist()
+@api_endpoint
 def create_sales_invoice_from_quotation(quotation: str, supply_source_by_item):
 	"""`supply_source_by_item`: JSON dict of {item_code: "Company Warehouse"|"Supplier"}."""
 	if isinstance(supply_source_by_item, str):
