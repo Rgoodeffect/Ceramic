@@ -5,57 +5,85 @@
 		<p v-if="error" class="mb-2 text-sm text-red-600">{{ error }}</p>
 		<p v-if="successMessage" class="mb-2 text-sm text-green-700">{{ successMessage }}</p>
 
-		<div v-if="invoiceName" class="mb-3 flex flex-col gap-2 rounded-md bg-gray-50 p-3">
+		<div v-if="invoiceName" class="mb-3 flex flex-col gap-3 rounded-md bg-gray-50 p-3">
 			<p class="text-xs font-medium uppercase text-gray-500">
 				Sales Invoice {{ invoiceName }} - {{ invoiceSubmitted ? "Finalized" : "Draft" }}
 			</p>
-			<div class="flex flex-wrap gap-2">
-				<Button size="sm" variant="outline" @click="printDoc('Sales Invoice', invoiceName)">
-					Print Invoice
-				</Button>
-				<Button
-					v-if="invoiceSubmitted"
-					size="sm"
-					variant="outline"
-					:loading="recordingPayment"
-					@click="recordPayment"
-				>
-					Record Payment
-				</Button>
-				<Button
-					v-if="invoiceSubmitted && hasWarehouseItems && !deliveryNoteName"
-					size="sm"
-					variant="outline"
-					:loading="creatingDeliveryNote"
-					@click="createDelivery"
-				>
-					Create Delivery Note
-				</Button>
+
+			<div>
+				<p class="mb-1 text-xs font-medium uppercase text-gray-500">Actions</p>
+				<div class="flex flex-wrap gap-2">
+					<Button
+						v-if="invoiceSubmitted && !paymentName"
+						size="sm"
+						variant="solid"
+						theme="blue"
+						:loading="recordingPayment"
+						@click="recordPayment"
+					>
+						Record Payment
+					</Button>
+					<Button
+						v-if="invoiceSubmitted && hasWarehouseItems && !deliveryNoteName"
+						size="sm"
+						variant="solid"
+						theme="blue"
+						:loading="creatingDeliveryNote"
+						@click="createDelivery"
+					>
+						Create Delivery Note
+					</Button>
+					<Button
+						v-if="invoiceSubmitted && hasSupplierItems && !supplierDeliveryName"
+						size="sm"
+						variant="solid"
+						theme="blue"
+						:loading="creatingSupplierDelivery"
+						@click="createSupplierDeliveryOrder"
+					>
+						Create Supplier Delivery Order
+					</Button>
+				</div>
 			</div>
-			<p v-if="paymentName" class="text-xs text-green-700">
-				Payment {{ paymentName }} recorded.
-				<button type="button" class="ml-1 font-medium underline" @click="printDoc('Payment Entry', paymentName)">
-					Print Receipt
-				</button>
-			</p>
-			<p v-if="deliveryNoteName" class="text-xs text-green-700">
-				Delivery Note {{ deliveryNoteName }} created.
-				<button
-					type="button"
-					class="ml-1 font-medium underline"
-					@click="printDoc('Delivery Note', deliveryNoteName)"
-				>
-					Print Delivery Note
-				</button>
-			</p>
+
+			<div>
+				<p class="mb-1 text-xs font-medium uppercase text-gray-500">Print</p>
+				<div class="flex flex-wrap gap-2">
+					<Button size="sm" variant="outline" @click="printDoc('Sales Invoice', invoiceName)">
+						Print Invoice
+					</Button>
+					<Button
+						v-if="paymentName"
+						size="sm"
+						variant="outline"
+						@click="printDoc('Payment Entry', paymentName!)"
+					>
+						Print Payment Receipt
+					</Button>
+					<Button
+						v-if="deliveryNoteName"
+						size="sm"
+						variant="outline"
+						@click="printDoc('Delivery Note', deliveryNoteName!)"
+					>
+						Print Delivery Note
+					</Button>
+					<Button
+						v-if="supplierDeliveryName"
+						size="sm"
+						variant="outline"
+						@click="printDoc('Supplier Delivery Order', supplierDeliveryName!)"
+					>
+						Print Supplier Delivery Order
+					</Button>
+				</div>
+			</div>
 		</div>
 
-		<p v-if="quotationSuccessMessage" class="mb-2 text-sm text-green-700">
-			{{ quotationSuccessMessage }}
-			<button type="button" class="ml-1 font-medium underline" @click="printDoc('Quotation', quotationName!)">
-				Print
-			</button>
-		</p>
+		<div v-if="quotationName" class="mb-3 flex flex-col gap-2 rounded-md bg-gray-50 p-3">
+			<p class="text-xs font-medium uppercase text-gray-500">Quotation {{ quotationName }}</p>
+			<Button size="sm" variant="outline" @click="printDoc('Quotation', quotationName!)">Print Quotation</Button>
+		</div>
 
 		<div class="flex flex-col gap-2">
 			<Button variant="outline" :loading="savingQuotation" @click="saveQuotation">Save Quotation</Button>
@@ -70,7 +98,7 @@ import { ref } from "vue";
 import { Button } from "frappe-ui";
 import { createQuotation } from "@/api/quotation";
 import { createSalesInvoice, submitSalesInvoice } from "@/api/sales";
-import { createPayment, createDeliveryNote } from "@/api/fulfillment";
+import { createPayment, createDeliveryNote, createSupplierDelivery } from "@/api/fulfillment";
 import { useCartStore } from "@/stores/cart";
 import { useSessionStore } from "@/stores/session";
 
@@ -81,16 +109,18 @@ const savingQuotation = ref(false);
 const creatingInvoice = ref(false);
 const recordingPayment = ref(false);
 const creatingDeliveryNote = ref(false);
+const creatingSupplierDelivery = ref(false);
 const error = ref("");
 const successMessage = ref("");
-const quotationSuccessMessage = ref("");
 const quotationName = ref<string | null>(null);
 
 const invoiceName = ref<string | null>(null);
 const invoiceSubmitted = ref(false);
 const hasWarehouseItems = ref(false);
+const hasSupplierItems = ref(false);
 const paymentName = ref<string | null>(null);
 const deliveryNoteName = ref<string | null>(null);
+const supplierDeliveryName = ref<string | null>(null);
 
 function validate(): boolean {
 	error.value = "";
@@ -113,19 +143,20 @@ function resetAll() {
 	cart.clear();
 	error.value = "";
 	successMessage.value = "";
-	quotationSuccessMessage.value = "";
 	quotationName.value = null;
 	invoiceName.value = null;
 	invoiceSubmitted.value = false;
 	hasWarehouseItems.value = false;
+	hasSupplierItems.value = false;
 	paymentName.value = null;
 	deliveryNoteName.value = null;
+	supplierDeliveryName.value = null;
 }
 
 async function saveQuotation() {
 	if (!validate() || !cart.customer || !session.showroom) return;
 	savingQuotation.value = true;
-	quotationSuccessMessage.value = "";
+	successMessage.value = "";
 	try {
 		const result = await createQuotation(
 			cart.customer.name,
@@ -137,7 +168,7 @@ async function saveQuotation() {
 			session.priceList,
 		);
 		quotationName.value = result.name;
-		quotationSuccessMessage.value = `Quotation ${result.name} created.`;
+		successMessage.value = `Quotation ${result.name} created.`;
 		cart.clear();
 	} catch (e) {
 		error.value = e instanceof Error ? e.message : String(e);
@@ -155,9 +186,11 @@ async function createInvoice() {
 	invoiceSubmitted.value = false;
 	paymentName.value = null;
 	deliveryNoteName.value = null;
+	supplierDeliveryName.value = null;
 	// Supply sources are only known while the cart still has lines - capture
 	// them before the cart is cleared below.
 	hasWarehouseItems.value = cart.lines.some((line) => line.supply_source === "Company Warehouse");
+	hasSupplierItems.value = cart.lines.some((line) => line.supply_source === "Supplier");
 	try {
 		const result = await createSalesInvoice(
 			cart.customer.name,
@@ -217,6 +250,20 @@ async function createDelivery() {
 		error.value = e instanceof Error ? e.message : String(e);
 	} finally {
 		creatingDeliveryNote.value = false;
+	}
+}
+
+async function createSupplierDeliveryOrder() {
+	if (!invoiceName.value) return;
+	creatingSupplierDelivery.value = true;
+	error.value = "";
+	try {
+		const result = await createSupplierDelivery(invoiceName.value);
+		supplierDeliveryName.value = result.name;
+	} catch (e) {
+		error.value = e instanceof Error ? e.message : String(e);
+	} finally {
+		creatingSupplierDelivery.value = false;
 	}
 }
 

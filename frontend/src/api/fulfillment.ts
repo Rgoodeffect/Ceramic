@@ -15,3 +15,13 @@ export function createDeliveryNote(salesInvoice: string): Promise<{ name: string
 		sales_invoice: salesInvoice,
 	});
 }
+
+export function createSupplierDelivery(
+	salesInvoice: string,
+	deliveryDate?: string,
+): Promise<{ name: string }> {
+	return invoke<{ name: string }>("retail_suite.api.fulfillment.create_supplier_delivery", {
+		sales_invoice: salesInvoice,
+		delivery_date: deliveryDate,
+	});
+}

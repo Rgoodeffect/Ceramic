@@ -1,7 +1,7 @@
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from retail_suite.services import fulfillment_service, sales_service
+from retail_suite.services import availability_confirmation_service, fulfillment_service, sales_service
 from retail_suite.tests import test_utils
 
 
@@ -57,11 +57,12 @@ class TestFulfillmentService(FrappeTestCase):
 			with self.assertRaises(frappe.ValidationError):
 				fulfillment_service.create_payment_entry(invoice.name)
 
-	def test_create_delivery_note_rejects_when_no_warehouse_items(self):
+	def _submitted_supplier_invoice(self):
+		"""A submitted invoice with one Supplier-sourced line, confirmed
+		availability already recorded - shared by the delivery-note and
+		supplier-delivery tests below."""
 		item = test_utils.ensure_item("_Test FS Supplier Item", area_per_box=1.5)
 		price_list = test_utils.ensure_price(item, "_Test FS Supplier Price List", rate=50)
-		from retail_suite.services import availability_confirmation_service
-
 		with self.set_user(self.user):
 			availability_confirmation_service.record_confirmation(
 				supplier=test_utils.ensure_supplier("_Test FS Supplier"),
@@ -78,8 +79,12 @@ class TestFulfillmentService(FrappeTestCase):
 				price_list=price_list,
 			)
 			invoice = sales_service.submit_sales_invoice(invoice.name)
-			with self.assertRaises(frappe.ValidationError):
-				fulfillment_service.create_delivery_note(invoice.name)
+		return invoice
+
+	def test_create_delivery_note_rejects_when_no_warehouse_items(self):
+		invoice = self._submitted_supplier_invoice()
+		with self.set_user(self.user), self.assertRaises(frappe.ValidationError):
+			fulfillment_service.create_delivery_note(invoice.name)
 
 	def test_create_delivery_note_rejects_draft_invoice(self):
 		with self.set_user(self.user):
@@ -91,3 +96,33 @@ class TestFulfillmentService(FrappeTestCase):
 			)
 			with self.assertRaises(frappe.ValidationError):
 				fulfillment_service.create_delivery_note(invoice.name)
+
+	def test_create_supplier_delivery_submits_order_against_confirmation(self):
+		invoice = self._submitted_supplier_invoice()
+		with self.set_user(self.user):
+			order = fulfillment_service.create_supplier_delivery(invoice.name)
+		self.assertEqual(order.docstatus, 1)
+		self.assertEqual(order.sales_invoice, invoice.name)
+		self.assertEqual(order.showroom, self.branch)
+		self.assertTrue(
+			frappe.db.get_value(
+				"Supplier Availability Confirmation", order.supplier_availability_confirmation, "status"
+			)
+			== "Confirmed"
+		)
+
+	def test_create_supplier_delivery_rejects_when_no_supplier_items(self):
+		invoice = self._submitted_invoice()
+		with self.set_user(self.user), self.assertRaises(frappe.ValidationError):
+			fulfillment_service.create_supplier_delivery(invoice.name)
+
+	def test_create_supplier_delivery_rejects_draft_invoice(self):
+		with self.set_user(self.user):
+			invoice = sales_service.create_sales_invoice(
+				customer=self.customer,
+				showroom=self.branch,
+				items=[{"item_code": self.item, "required_area_sqm": 2.8, "supply_source": "Company Warehouse"}],
+				price_list=self.price_list,
+			)
+			with self.assertRaises(frappe.ValidationError):
+				fulfillment_service.create_supplier_delivery(invoice.name)

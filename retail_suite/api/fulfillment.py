@@ -21,3 +21,10 @@ def create_payment(sales_invoice: str, mode_of_payment: str | None = None):
 def create_delivery_note(sales_invoice: str):
 	doc = fulfillment_service.create_delivery_note(sales_invoice)
 	return {"name": doc.name}
+
+
+@frappe.whitelist()
+@api_endpoint
+def create_supplier_delivery(sales_invoice: str, delivery_date: str | None = None):
+	doc = fulfillment_service.create_supplier_delivery(sales_invoice, delivery_date)
+	return {"name": doc.name}
