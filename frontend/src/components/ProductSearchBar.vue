@@ -3,7 +3,7 @@
 		<input
 			v-model="catalog.searchTerm"
 			type="text"
-			placeholder="Search by name, code, brand, collection, series, or color..."
+			:placeholder="t('Search by name, code, brand, collection, series, or color...')"
 			class="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none"
 			@input="onInput"
 		/>
@@ -13,6 +13,7 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
 import { debounce } from "frappe-ui";
+import { t } from "@/utils/translate";
 import { useCatalogStore } from "@/stores/catalog";
 
 const catalog = useCatalogStore();

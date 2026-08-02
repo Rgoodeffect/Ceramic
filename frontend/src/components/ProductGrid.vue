@@ -5,7 +5,7 @@
 		</div>
 		<p v-else-if="catalog.error" class="text-sm text-red-600">{{ catalog.error }}</p>
 		<p v-else-if="catalog.searched && catalog.items.length === 0" class="text-sm text-gray-500">
-			No products found.
+			{{ t("No products found.") }}
 		</p>
 		<div v-else class="grid grid-cols-3 gap-4">
 			<ProductCard
@@ -20,6 +20,7 @@
 
 <script setup lang="ts">
 import { LoadingIndicator } from "frappe-ui";
+import { t } from "@/utils/translate";
 import { useCatalogStore } from "@/stores/catalog";
 import type { PosItem } from "@/types";
 import ProductCard from "@/components/ProductCard.vue";

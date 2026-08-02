@@ -5,10 +5,11 @@
 	>
 		{{ session.showroom }}
 	</span>
-	<span v-else class="text-sm text-gray-400">No showroom assigned</span>
+	<span v-else class="text-sm text-gray-400">{{ t("No showroom assigned") }}</span>
 </template>
 
 <script setup lang="ts">
+import { t } from "@/utils/translate";
 import { useSessionStore } from "@/stores/session";
 
 const session = useSessionStore();

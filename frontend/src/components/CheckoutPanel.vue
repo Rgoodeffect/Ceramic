@@ -1,17 +1,18 @@
 <template>
 	<div class="rounded-lg border border-gray-200 bg-white p-4">
-		<h2 class="mb-2 text-sm font-semibold text-gray-700">Checkout</h2>
+		<h2 class="mb-2 text-sm font-semibold text-gray-700">{{ t("Checkout") }}</h2>
 
 		<p v-if="error" class="mb-2 text-sm text-red-600">{{ error }}</p>
 		<p v-if="successMessage" class="mb-2 text-sm text-green-700">{{ successMessage }}</p>
 
 		<div v-if="invoiceName" class="mb-3 flex flex-col gap-3 rounded-md bg-gray-50 p-3">
 			<p class="text-xs font-medium uppercase text-gray-500">
-				Sales Invoice {{ invoiceName }} - {{ invoiceSubmitted ? "Finalized" : "Draft" }}
+				{{ t("Sales Invoice") }} {{ invoiceName }} -
+				{{ invoiceSubmitted ? t("Finalized") : t("Draft") }}
 			</p>
 
 			<div>
-				<p class="mb-1 text-xs font-medium uppercase text-gray-500">Actions</p>
+				<p class="mb-1 text-xs font-medium uppercase text-gray-500">{{ t("Actions") }}</p>
 				<div class="flex flex-wrap gap-2">
 					<Button
 						v-if="invoiceSubmitted && !paymentName"
@@ -21,7 +22,7 @@
 						:loading="recordingPayment"
 						@click="recordPayment"
 					>
-						Record Payment
+						{{ t("Record Payment") }}
 					</Button>
 					<Button
 						v-if="invoiceSubmitted && hasWarehouseItems && !deliveryNoteName"
@@ -31,7 +32,7 @@
 						:loading="creatingDeliveryNote"
 						@click="createDelivery"
 					>
-						Create Delivery Note
+						{{ t("Create Delivery Note") }}
 					</Button>
 					<Button
 						v-if="invoiceSubmitted && hasSupplierItems && !supplierDeliveryName"
@@ -41,16 +42,16 @@
 						:loading="creatingSupplierDelivery"
 						@click="createSupplierDeliveryOrder"
 					>
-						Create Supplier Delivery Order
+						{{ t("Create Supplier Delivery Order") }}
 					</Button>
 				</div>
 			</div>
 
 			<div>
-				<p class="mb-1 text-xs font-medium uppercase text-gray-500">Print</p>
+				<p class="mb-1 text-xs font-medium uppercase text-gray-500">{{ t("Print") }}</p>
 				<div class="flex flex-wrap gap-2">
 					<Button size="sm" variant="outline" @click="printDoc('Sales Invoice', invoiceName)">
-						Print Invoice
+						{{ t("Print Invoice") }}
 					</Button>
 					<Button
 						v-if="paymentName"
@@ -58,7 +59,7 @@
 						variant="outline"
 						@click="printDoc('Payment Entry', paymentName!)"
 					>
-						Print Payment Receipt
+						{{ t("Print Payment Receipt") }}
 					</Button>
 					<Button
 						v-if="deliveryNoteName"
@@ -66,7 +67,7 @@
 						variant="outline"
 						@click="printDoc('Delivery Note', deliveryNoteName!)"
 					>
-						Print Delivery Note
+						{{ t("Print Delivery Note") }}
 					</Button>
 					<Button
 						v-if="supplierDeliveryName"
@@ -74,21 +75,25 @@
 						variant="outline"
 						@click="printDoc('Supplier Delivery Order', supplierDeliveryName!)"
 					>
-						Print Supplier Delivery Order
+						{{ t("Print Supplier Delivery Order") }}
 					</Button>
 				</div>
 			</div>
 		</div>
 
 		<div v-if="quotationName" class="mb-3 flex flex-col gap-2 rounded-md bg-gray-50 p-3">
-			<p class="text-xs font-medium uppercase text-gray-500">Quotation {{ quotationName }}</p>
-			<Button size="sm" variant="outline" @click="printDoc('Quotation', quotationName!)">Print Quotation</Button>
+			<p class="text-xs font-medium uppercase text-gray-500">{{ t("Quotation") }} {{ quotationName }}</p>
+			<Button size="sm" variant="outline" @click="printDoc('Quotation', quotationName!)">
+				{{ t("Print Quotation") }}
+			</Button>
 		</div>
 
 		<div class="flex flex-col gap-2">
-			<Button variant="outline" :loading="savingQuotation" @click="saveQuotation">Save Quotation</Button>
-			<Button variant="solid" theme="blue" :loading="creatingInvoice" @click="createInvoice">Create Invoice</Button>
-			<Button variant="ghost" theme="red" @click="resetAll">Cancel</Button>
+			<Button variant="outline" :loading="savingQuotation" @click="saveQuotation">{{ t("Save Quotation") }}</Button>
+			<Button variant="solid" theme="blue" :loading="creatingInvoice" @click="createInvoice">
+				{{ t("Create Invoice") }}
+			</Button>
+			<Button variant="ghost" theme="red" @click="resetAll">{{ t("Cancel") }}</Button>
 		</div>
 	</div>
 </template>
@@ -99,6 +104,7 @@ import { Button } from "frappe-ui";
 import { createQuotation } from "@/api/quotation";
 import { createSalesInvoice, submitSalesInvoice } from "@/api/sales";
 import { createPayment, createDeliveryNote, createSupplierDelivery } from "@/api/fulfillment";
+import { t } from "@/utils/translate";
 import { useCartStore } from "@/stores/cart";
 import { useSessionStore } from "@/stores/session";
 
@@ -125,15 +131,15 @@ const supplierDeliveryName = ref<string | null>(null);
 function validate(): boolean {
 	error.value = "";
 	if (!session.showroom) {
-		error.value = "No showroom available for this sale.";
+		error.value = t("No showroom available for this sale.");
 		return false;
 	}
 	if (!cart.customer) {
-		error.value = "Select or create a customer first.";
+		error.value = t("Select or create a customer first.");
 		return false;
 	}
 	if (cart.isEmpty) {
-		error.value = "Add at least one item to the cart.";
+		error.value = t("Add at least one item to the cart.");
 		return false;
 	}
 	return true;
@@ -168,7 +174,7 @@ async function saveQuotation() {
 			session.priceList,
 		);
 		quotationName.value = result.name;
-		successMessage.value = `Quotation ${result.name} created.`;
+		successMessage.value = t("Quotation {0} created.", [result.name]);
 		cart.clear();
 	} catch (e) {
 		error.value = e instanceof Error ? e.message : String(e);
@@ -208,15 +214,16 @@ async function createInvoice() {
 		try {
 			await submitSalesInvoice(result.name);
 			invoiceSubmitted.value = true;
-			successMessage.value = `Sales Invoice ${result.name} completed.`;
+			successMessage.value = t("Sales Invoice {0} completed.", [result.name]);
 		} catch (submitError) {
 			// Created successfully as a draft, but couldn't finalize yet (e.g.
 			// a Supplier-sourced line is still waiting on availability
 			// confirmation - spec Part 5). Keep the draft, surface why.
 			successMessage.value = "";
-			error.value =
-				`Sales Invoice ${result.name} was saved as a draft but could not be finalized: ` +
-				(submitError instanceof Error ? submitError.message : String(submitError));
+			error.value = t("Sales Invoice {0} was saved as a draft but could not be finalized: {1}", [
+				result.name,
+				submitError instanceof Error ? submitError.message : String(submitError),
+			]);
 		}
 	} catch (e) {
 		error.value = e instanceof Error ? e.message : String(e);

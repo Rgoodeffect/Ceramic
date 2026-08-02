@@ -1,7 +1,7 @@
 <template>
 	<div class="flex h-screen flex-col bg-gray-50 text-gray-900">
 		<header class="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-3 shadow-sm">
-			<h1 class="text-lg font-semibold">Ceramic Showroom POS</h1>
+			<h1 class="text-lg font-semibold">{{ t("Ceramic Showroom POS") }}</h1>
 			<ShowroomBanner />
 		</header>
 
@@ -22,7 +22,9 @@
 				<p class="text-amber-800">
 					{{
 						session.loadError ||
-						"Your user does not have a showroom assigned. Ask your administrator to set a Default Showroom on your User record."
+						t(
+							"Your user does not have a showroom assigned. Ask your administrator to set a Default Showroom on your User record.",
+						)
 					}}
 				</p>
 				<ShowroomPicker v-if="session.isUnrestricted" />
@@ -40,6 +42,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { LoadingIndicator } from "frappe-ui";
+import { t } from "@/utils/translate";
 import { useSessionStore } from "@/stores/session";
 import type { PosItem } from "@/types";
 import ShowroomBanner from "@/components/ShowroomBanner.vue";

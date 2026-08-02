@@ -1,11 +1,11 @@
 <template>
 	<div class="rounded-lg border border-gray-200 bg-white p-4">
-		<h2 class="mb-2 text-sm font-semibold text-gray-700">Customer</h2>
+		<h2 class="mb-2 text-sm font-semibold text-gray-700">{{ t("Customer") }}</h2>
 
 		<div v-if="cart.customer" class="flex items-center justify-between">
 			<span class="text-sm font-medium">{{ cart.customer.customer_name }}</span>
 			<button type="button" class="text-xs text-blue-600 hover:underline" @click="cart.setCustomer(null)">
-				Change
+				{{ t("Change") }}
 			</button>
 		</div>
 
@@ -13,7 +13,7 @@
 			<input
 				v-model="term"
 				type="text"
-				placeholder="Search customer by name..."
+				:placeholder="t('Search customer by name...')"
 				class="w-full rounded border border-gray-300 px-3 py-2 text-sm"
 				@input="onSearchInput"
 			/>
@@ -27,7 +27,7 @@
 					{{ customer.customer_name }}
 				</li>
 			</ul>
-			<Button variant="outline" class="w-full" @click="showQuickCreate = true">New Customer</Button>
+			<Button variant="outline" class="w-full" @click="showQuickCreate = true">{{ t("New Customer") }}</Button>
 		</div>
 
 		<QuickCreateCustomerDialog
@@ -42,6 +42,7 @@
 import { ref } from "vue";
 import { Button, debounce } from "frappe-ui";
 import { searchCustomers } from "@/api/customer";
+import { t } from "@/utils/translate";
 import { useCartStore } from "@/stores/cart";
 import type { CustomerRef } from "@/types";
 import QuickCreateCustomerDialog from "@/components/QuickCreateCustomerDialog.vue";
