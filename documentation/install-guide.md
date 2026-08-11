@@ -251,3 +251,16 @@ With that done, ERPNext's standard "Sales Invoice → Make → Delivery Note"
 mapping picks up the warehouse and delivered quantity automatically and
 deducts stock on submit - confirmed working with zero `retail_suite` code
 changes needed.
+
+### Optional: allow delivering below zero stock
+
+By default ERPNext blocks submitting a Delivery Note that would take a
+warehouse's balance negative. Some showrooms deliberately deliver before
+their stock count is fully reconciled (goods physically on the way in, a
+count lagging behind reality, etc.) and want the Delivery Note - and its
+print-out - to go through anyway. This is a standard ERPNext setting, not
+`retail_suite` behaviour: Desk → **Stock Settings** → check **Allow
+Negative Stock**. It's sitewide (applies to every company/warehouse on the
+site), so turn it on deliberately, not as a default for every install -
+it means stock ledger balances can go negative until the count is
+corrected, which affects standard ERPNext stock valuation reports too.

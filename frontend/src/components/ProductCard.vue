@@ -15,9 +15,18 @@
 			<p class="truncate text-sm font-semibold" :title="item.item_name">{{ item.item_name }}</p>
 			<p class="text-xs text-gray-500">{{ item.item_code }}</p>
 			<p v-if="specLine" class="text-xs text-gray-500">{{ specLine }}</p>
-			<p class="text-xs text-gray-500">{{ t("Box") }}: {{ item.custom_area_per_box }} {{ t("m²") }}</p>
+			<p v-if="isAreaBased" class="text-xs text-gray-500">{{ t("Box") }}: {{ item.custom_area_per_box }} {{ t("m²") }}</p>
 			<p class="text-sm font-medium text-gray-900">
-				{{ item.price_per_sqm != null ? `${formatNumber(item.price_per_sqm)} / ${t("m²")}` : t("No price set") }}
+				<template v-if="isAreaBased">
+					{{ item.price_per_sqm != null ? `${formatNumber(item.price_per_sqm)} / ${t("m²")}` : t("No price set") }}
+				</template>
+				<template v-else>
+					{{
+						item.price_per_uom != null
+							? `${formatNumber(item.price_per_uom)} / ${t(item.stock_uom)}`
+							: t("No price set")
+					}}
+				</template>
 			</p>
 			<Button variant="solid" theme="blue" class="mt-auto w-full" @click="$emit('add', item)">
 				{{ t("Add") }}
@@ -30,10 +39,13 @@
 import { computed } from "vue";
 import { Button } from "frappe-ui";
 import { t } from "@/utils/translate";
+import { isAreaBasedItem } from "@/types";
 import type { PosItem } from "@/types";
 
 const props = defineProps<{ item: PosItem }>();
 defineEmits<{ add: [item: PosItem] }>();
+
+const isAreaBased = computed(() => isAreaBasedItem(props.item));
 
 const specLine = computed(() => {
 	const { custom_width, custom_height, custom_thickness, custom_color, custom_finish } = props.item;

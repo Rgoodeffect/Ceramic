@@ -15,9 +15,11 @@ from retail_suite.retail_suite_core.permissions import permission_service
 def create_quotation(customer: str, showroom: str, items: list[dict], price_list: str):
 	"""Create a draft Quotation from POS/API input.
 
-	`items` is a list of {"item_code": str, "required_area_sqm": float}.
-	Boxes, delivered area, and rate are computed here via CalculationService -
-	the caller only ever supplies the required area, never a box count.
+	`items` is a list of {"item_code": str} plus either "required_area_sqm"
+	(ceramic items - boxes/delivered area/rate computed here via
+	CalculationService, the caller only ever supplies the required area,
+	never a box count) or "qty" (everything else, sold by the piece, bag,
+	etc. rather than the square meter).
 	"""
 	permission_service.assert_showroom_access(showroom)
 	if not items:
@@ -33,8 +35,11 @@ def create_quotation(customer: str, showroom: str, items: list[dict], price_list
 	for item in items:
 		row = quotation.append("items", {})
 		row.item_code = item["item_code"]
-		row.custom_required_area_sqm = item["required_area_sqm"]
-		calculation_service.apply_to_item_row(row, price_list)
+		if item.get("required_area_sqm"):
+			row.custom_required_area_sqm = item["required_area_sqm"]
+			calculation_service.apply_to_item_row(row, price_list)
+		else:
+			calculation_service.apply_simple_row(row, item.get("qty"), price_list)
 
 	quotation.insert()
 	return quotation

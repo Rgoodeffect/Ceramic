@@ -74,16 +74,20 @@ def create_supplier_delivery(sales_invoice: str, delivery_date: str | None = Non
 	"""Create a Supplier Delivery Order for a submitted Sales Invoice's
 	Supplier-sourced lines.
 
-	`before_submit` (`sales_service.validate_supplier_confirmation_before_submit`)
-	already guarantees a *Confirmed* Supplier Availability Confirmation
-	exists per Supplier-sourced item/showroom before the invoice could even
-	reach docstatus 1 - this just looks that confirmation back up so the
-	salesperson at the POS doesn't have to hunt for its name themselves.
-	`supplier_delivery_service.create_from_sales_invoice` puts every
-	Supplier-sourced row on one order under that one confirmation's
-	supplier (a cart split across multiple different suppliers isn't
-	something this app's model represents - one order per checkout).
+	The supplier comes straight from the invoice line (`custom_supplier`,
+	set at the point of sale - see `sales_service.validate_supply_sources`),
+	not from a Supplier Availability Confirmation - that record is now only
+	consulted when Retail Suite Settings > Require Supplier Availability
+	Confirmation is on (spec Part 5's original behaviour), and even then only
+	to attach it to the order for traceability, not to determine who the
+	supplier is. `supplier_delivery_service.create_from_sales_invoice` puts
+	every Supplier-sourced row on one order under the first row's supplier
+	(a cart split across multiple different suppliers isn't something this
+	app's model represents - one order per checkout).
 	"""
+	from retail_suite.retail_suite_core.doctype.retail_suite_settings.retail_suite_settings import (
+		is_supplier_confirmation_required,
+	)
 	from retail_suite.services import supplier_delivery_service
 
 	invoice = frappe.get_doc("Sales Invoice", sales_invoice)
@@ -95,27 +99,34 @@ def create_supplier_delivery(sales_invoice: str, delivery_date: str | None = Non
 	if not supplier_rows:
 		frappe.throw(_("This invoice has no Supplier-sourced items to deliver."))
 
+	supplier = supplier_rows[0].custom_supplier
+	if not supplier:
+		frappe.throw(_("No supplier set on item {0}.").format(supplier_rows[0].item_code))
+
 	confirmation_name = frappe.db.get_value(
 		"Supplier Availability Confirmation",
 		{
 			"item": supplier_rows[0].item_code,
 			"showroom": invoice.custom_showroom,
+			"supplier": supplier,
 			"status": "Confirmed",
 			"docstatus": 1,
 		},
 		"name",
 		order_by="confirmation_date desc",
 	)
-	if not confirmation_name:
+	if is_supplier_confirmation_required() and not confirmation_name:
 		# Guarded against by before_submit already, so this should be
-		# unreachable in practice - kept as a clear error, not an assert,
-		# in case a confirmation is cancelled between submit and this call.
+		# unreachable in practice when the setting is on - kept as a clear
+		# error, not an assert, in case a confirmation is cancelled between
+		# submit and this call.
 		frappe.throw(
 			_("No confirmed supplier availability found for item {0}.").format(supplier_rows[0].item_code)
 		)
 
 	order = supplier_delivery_service.create_from_sales_invoice(
 		sales_invoice_name=sales_invoice,
+		supplier=supplier,
 		supplier_availability_confirmation_name=confirmation_name,
 		delivery_date=delivery_date or frappe.utils.nowdate(),
 	)

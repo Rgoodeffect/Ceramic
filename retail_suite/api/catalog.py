@@ -26,6 +26,7 @@ POS_ITEM_FIELDS = [
 	"custom_pieces_per_box",
 	"custom_featured_product",
 	"custom_display_sequence",
+	"stock_uom",
 ]
 
 
@@ -60,15 +61,30 @@ def search_items(search_term: str = "", price_list: str | None = None, limit: in
 
 	if price_list:
 		for item in items:
-			item["price_per_sqm"] = frappe.db.get_value(
-				"Item Price",
-				{
-					"item_code": item["item_code"],
-					"price_list": price_list,
-					"uom": "Square Meter",
-					"selling": 1,
-				},
-				"price_list_rate",
-			)
+			if item.get("custom_area_per_box"):
+				item["price_per_sqm"] = frappe.db.get_value(
+					"Item Price",
+					{
+						"item_code": item["item_code"],
+						"price_list": price_list,
+						"uom": "Square Meter",
+						"selling": 1,
+					},
+					"price_list_rate",
+				)
+			else:
+				# Not every item is priced by the square meter - some are sold
+				# by the piece, bag, etc. (their own stock UOM) instead.
+				item["price_per_sqm"] = None
+				item["price_per_uom"] = frappe.db.get_value(
+					"Item Price",
+					{
+						"item_code": item["item_code"],
+						"price_list": price_list,
+						"uom": item["stock_uom"],
+						"selling": 1,
+					},
+					"price_list_rate",
+				)
 
 	return items

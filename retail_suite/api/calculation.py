@@ -15,3 +15,11 @@ from retail_suite.retail_suite_ceramic import calculation_service
 @api_endpoint
 def preview_row(item_code: str, required_area_sqm: float, price_list: str):
 	return calculation_service.calculate_row(item_code, float(required_area_sqm), price_list)
+
+
+@frappe.whitelist()
+@api_endpoint
+def preview_simple_row(item_code: str, qty: float, price_list: str):
+	"""Preview for a non-ceramic item (no Area Per Box configured) - plain
+	qty x rate in the item's own stock UOM."""
+	return calculation_service.calculate_simple_row(item_code, float(qty), price_list)

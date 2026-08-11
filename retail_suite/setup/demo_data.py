@@ -93,7 +93,6 @@ def create_demo_data():
 	_create_catalog()
 	customers = _create_customers()
 	supplier = _create_supplier()
-	_create_showroom_workspaces(branches_by_code)
 	_create_sample_workflow(company, branches_by_code, customers, supplier)
 	frappe.db.commit()
 	print("Retail Suite demo data ready.")
@@ -274,73 +273,6 @@ def _create_supplier() -> str:
 	return supplier_name
 
 
-def _create_showroom_workspaces(branches_by_code: dict) -> None:
-	"""Lightweight per-showroom Workspace variants (deferred from Phase 7 -
-	see PLAN.md - since the literal showroom names/branding are this
-	customer's business data, not generic app architecture)."""
-	for code, branch_name in branches_by_code.items():
-		workspace_name = f"{branch_name} Workspace"
-		if frappe.db.exists("Workspace", workspace_name):
-			continue
-		content = [
-			{
-				"id": f"{code}-header",
-				"type": "header",
-				"data": {"text": f"<span class=\"h4\"><b>{branch_name}</b></span>", "level": 4, "col": 12},
-			},
-			{
-				"id": f"{code}-shortcut-pos",
-				"type": "shortcut",
-				"data": {"shortcut_name": "New Sale", "col": 4},
-			},
-			{
-				"id": f"{code}-shortcut-invoices",
-				"type": "shortcut",
-				"data": {"shortcut_name": "Sales Invoices", "col": 4},
-			},
-			{
-				"id": f"{code}-shortcut-dashboard",
-				"type": "shortcut",
-				"data": {"shortcut_name": "Showroom Dashboard", "col": 4},
-			},
-		]
-		frappe.get_doc(
-			{
-				"doctype": "Workspace",
-				"name": workspace_name,
-				"label": workspace_name,
-				"title": workspace_name,
-				"module": "Retail Suite Core",
-				"public": 1,
-				"icon": "retail",
-				"content": frappe.as_json(content),
-				"shortcuts": [
-					{
-						"doctype": "Workspace Shortcut",
-						"label": "New Sale",
-						"type": "Page",
-						"link_to": "ceramic-pos",
-						"color": "Green",
-					},
-					{
-						"doctype": "Workspace Shortcut",
-						"label": "Sales Invoices",
-						"type": "DocType",
-						"link_to": "Sales Invoice",
-						"color": "Blue",
-					},
-					{
-						"doctype": "Workspace Shortcut",
-						"label": "Showroom Dashboard",
-						"type": "Dashboard",
-						"link_to": "Showroom Dashboard",
-						"color": "Grey",
-					},
-				],
-			}
-		).insert(ignore_permissions=True)
-
-
 def _create_sample_workflow(company: str, branches_by_code: dict, customers: list[str], supplier: str) -> None:
 	"""One worked example of each fulfillment path, exercising the real
 	CalculationService/services layer end to end - not just inserted rows."""
@@ -386,7 +318,19 @@ def _create_sample_workflow(company: str, branches_by_code: dict, customers: lis
 			invoice = sales_service.create_sales_invoice(
 				customer=customers[1],
 				showroom=az,
-				items=[{"item_code": ITEMS[1][0], "required_area_sqm": 5, "supply_source": "Supplier"}],
+				items=[
+					{
+						"item_code": ITEMS[1][0],
+						"required_area_sqm": 5,
+						"supply_source": "Supplier",
+						# Set directly on the line - see sales_service.validate_supply_sources.
+						# The demo still records a confirmation above and links it below
+						# purely to demonstrate that optional path; it's no longer what
+						# determines the supplier (Retail Suite Settings > Require Supplier
+						# Availability Confirmation is off by default).
+						"supplier": supplier,
+					}
+				],
 				price_list=PRICE_LIST,
 			)
 			invoice.po_no = "DEMO-SUPPLIER-PATH"
@@ -394,6 +338,7 @@ def _create_sample_workflow(company: str, branches_by_code: dict, customers: lis
 			invoice.submit()
 			supplier_delivery_service.create_from_sales_invoice(
 				sales_invoice_name=invoice.name,
+				supplier=supplier,
 				supplier_availability_confirmation_name=confirmation.name,
 				delivery_date=add_days(today(), 3),
 			)

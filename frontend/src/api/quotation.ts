@@ -2,7 +2,10 @@ import invoke from "./client";
 
 export interface QuotationItemInput {
 	item_code: string;
-	required_area_sqm: number;
+	/** Set for ceramic items (mutually exclusive with `qty`). */
+	required_area_sqm?: number;
+	/** Set for everything else - a plain quantity in the item's own UOM. */
+	qty?: number;
 }
 
 export function createQuotation(

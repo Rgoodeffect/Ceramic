@@ -10,12 +10,17 @@
 		</div>
 		<div class="min-w-0 flex-1">
 			<p class="truncate text-sm font-medium">{{ line.item.item_name }}</p>
-			<p class="text-xs text-gray-500">
+			<p v-if="line.is_area_based" class="text-xs text-gray-500">
 				{{ t("Required") }} {{ line.required_area_sqm }} {{ t("m²") }} ·
-				{{ line.calculation.boxes }} {{ t("boxes") }} · {{ t("Delivered") }}
-				{{ line.calculation.delivered_area_sqm }} {{ t("m²") }}
+				{{ areaCalculation.boxes }} {{ t("boxes") }} · {{ t("Delivered") }}
+				{{ areaCalculation.delivered_area_sqm }} {{ t("m²") }}
 			</p>
-			<p class="text-xs text-gray-500">{{ t(line.supply_source) }}</p>
+			<p v-else class="text-xs text-gray-500">
+				{{ line.qty }} {{ t(simpleCalculation.uom) }}
+			</p>
+			<p class="text-xs text-gray-500">
+				{{ t(line.supply_source) }}<span v-if="line.supplier"> · {{ line.supplier }}</span>
+			</p>
 		</div>
 		<div class="flex flex-shrink-0 flex-col items-end gap-1">
 			<span class="text-sm font-semibold">{{ line.calculation.amount }}</span>
@@ -27,9 +32,15 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import { t } from "@/utils/translate";
-import type { CartLine } from "@/types";
+import type { CalculationPreview, CartLine, SimpleCalculationPreview } from "@/types";
 
-defineProps<{ line: CartLine }>();
+const props = defineProps<{ line: CartLine }>();
 defineEmits<{ remove: [key: string] }>();
+
+// line.calculation's shape depends on line.is_area_based (see stores/cart.ts) -
+// these narrow it for the template above, which branches on the same flag.
+const areaCalculation = computed(() => props.line.calculation as CalculationPreview);
+const simpleCalculation = computed(() => props.line.calculation as SimpleCalculationPreview);
 </script>

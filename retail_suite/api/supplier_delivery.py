@@ -41,13 +41,20 @@ def record_availability_confirmation(
 @api_endpoint
 def create_supplier_delivery_order(
 	sales_invoice: str,
-	supplier_availability_confirmation: str,
 	delivery_date: str,
+	supplier: str | None = None,
+	supplier_availability_confirmation: str | None = None,
 	customer_address: str | None = None,
 	remarks: str | None = None,
 ):
+	"""`supplier` is required unless `supplier_availability_confirmation` is
+	given instead (its supplier is then used) - see
+	`supplier_delivery_service.create_from_sales_invoice`. A confirmation is
+	only mandatory when Retail Suite Settings > Require Supplier Availability
+	Confirmation is on."""
 	doc = supplier_delivery_service.create_from_sales_invoice(
 		sales_invoice_name=sales_invoice,
+		supplier=supplier,
 		supplier_availability_confirmation_name=supplier_availability_confirmation,
 		delivery_date=delivery_date,
 		customer_address=customer_address,

@@ -392,6 +392,20 @@
  },
  {
   "doctype": "Custom Field",
+  "name": "Sales Invoice Item-custom_supplier",
+  "dt": "Sales Invoice Item",
+  "fieldname": "custom_supplier",
+  "label": "Supplier",
+  "fieldtype": "Link",
+  "options": "Supplier",
+  "insert_after": "custom_supply_source",
+  "depends_on": "eval:doc.custom_supply_source==\"Supplier\"",
+  "mandatory_depends_on": "eval:doc.custom_supply_source==\"Supplier\"",
+  "print_hide": 1,
+  "description": "Which supplier this Supplier-sourced line goes to. Set directly at the point of sale - a Supplier Availability Confirmation is no longer required to submit the invoice or create the Supplier Delivery Order (Retail Suite Settings > Require Supplier Availability Confirmation controls whether one is still enforced)."
+ },
+ {
+  "doctype": "Custom Field",
   "name": "Delivery Note Item-custom_required_area_sqm",
   "dt": "Delivery Note Item",
   "fieldname": "custom_required_area_sqm",

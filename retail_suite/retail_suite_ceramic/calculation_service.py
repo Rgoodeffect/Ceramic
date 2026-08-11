@@ -104,6 +104,50 @@ def apply_to_item_row(row, price_list: str) -> None:
 	row.custom_price_per_sqm = result["price_per_sqm"]
 
 
+def is_area_based_item(item_code: str) -> bool:
+	"""Whether an item goes through the m²/box engine at all. Not every item
+	a showroom sells does - some are priced and sold by the piece, bag, etc.
+	(spec follow-up: "some items are not calculated by square meter")."""
+	area_per_box = frappe.db.get_value("Item", item_code, "custom_area_per_box")
+	return bool(area_per_box and area_per_box > 0)
+
+
+def calculate_simple_row(item_code: str, qty: float, price_list: str) -> dict:
+	"""Calculation for a non-ceramic item row: plain qty x rate in the item's
+	own stock UOM, via the standard ERPNext Item Price (spec: "Use ERPNext
+	Price List. Do not create custom pricing engine." - applies here too,
+	not just to the ceramic m² price). Mirrors `calculate_row`'s use as a
+	preview/apply source so the POS cart and print formats don't need two
+	separate code paths, only a branch on whether the item is area-based.
+	"""
+	if qty is None or qty <= 0:
+		frappe.throw(_("Quantity must be greater than zero."), frappe.ValidationError)
+	stock_uom = frappe.db.get_value("Item", item_code, "stock_uom")
+	if not stock_uom:
+		frappe.throw(_("Item {0} not found.").format(item_code), frappe.ValidationError)
+	rate = frappe.db.get_value(
+		"Item Price",
+		{"item_code": item_code, "price_list": price_list, "uom": stock_uom, "selling": 1},
+		"price_list_rate",
+	)
+	if rate is None:
+		frappe.throw(
+			_("No {0} price found for item {1} in price list {2}.").format(stock_uom, item_code, price_list),
+			frappe.ValidationError,
+		)
+	return {"qty": qty, "uom": stock_uom, "rate": rate, "amount": round(qty * rate, 2)}
+
+
+def apply_simple_row(row, qty: float, price_list: str) -> None:
+	"""Mutate a Quotation Item / Sales Invoice Item child row for a
+	non-ceramic item - the POS-API equivalent of `apply_to_item_row` for
+	items with no Area Per Box configured."""
+	result = calculate_simple_row(row.item_code, qty, price_list)
+	row.qty = result["qty"]
+	row.uom = result["uom"]
+	row.rate = result["rate"]
+
+
 def validate_item_rows(doc, method=None) -> None:
 	"""`validate` doc_event body for Quotation and Sales Invoice (Phase 5).
 

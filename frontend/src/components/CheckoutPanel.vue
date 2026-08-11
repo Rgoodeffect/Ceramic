@@ -169,7 +169,8 @@ async function saveQuotation() {
 			session.showroom,
 			cart.lines.map((line) => ({
 				item_code: line.item.item_code,
-				required_area_sqm: line.required_area_sqm,
+				required_area_sqm: line.required_area_sqm ?? undefined,
+				qty: line.qty ?? undefined,
 			})),
 			session.priceList,
 		);
@@ -203,8 +204,10 @@ async function createInvoice() {
 			session.showroom,
 			cart.lines.map((line) => ({
 				item_code: line.item.item_code,
-				required_area_sqm: line.required_area_sqm,
+				required_area_sqm: line.required_area_sqm ?? undefined,
+				qty: line.qty ?? undefined,
 				supply_source: line.supply_source,
+				supplier: line.supplier ?? undefined,
 			})),
 			session.priceList,
 		);
