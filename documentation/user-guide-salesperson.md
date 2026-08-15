@@ -51,6 +51,30 @@ Customer needs **2.8 m²** of a tile whose box covers **1.5 m²**:
   a new tab.
 - **Cancel** clears the cart without saving anything.
 
+## Taking payment - in full, in part, or later
+
+Once the invoice is created, the Checkout panel shows the invoice total,
+what has been paid, and what is still owed.
+
+- **Amount Paid Now** starts filled in with the full remaining balance, so
+  a customer paying in full is one tap on **Record Payment**.
+- If the customer is only paying part of it, type the smaller amount over
+  it and tap **Record Payment**. The rest is shown in red as **Remaining
+  Debt** - it stays on the invoice as money the customer owes, and the
+  invoice is marked *Partly Paid*.
+- If they're paying nothing today, just don't record a payment. The whole
+  invoice stands as their debt.
+- **Full Amount** puts the whole remaining balance back in the box if you
+  typed over it.
+- The panel also shows **Total debt for this customer** across all their
+  invoices, at every showroom - check it before agreeing to another
+  part payment.
+
+The customer can come back and pay more at any time: open the invoice's
+POS checkout again and record another payment against it. Each payment
+prints its own receipt showing what was paid and what is still owed, and
+the invoice printout shows the paid amount and the remaining debt.
+
 ## If a product needs to come from a supplier
 
 Before you can invoice a line marked "Supplier," you (or whoever handles
@@ -67,6 +91,15 @@ available:
 4. Once the invoice is submitted, a **Supplier Delivery Order** can be
    created from it, linked to that confirmation. It never shows prices -
    it's a delivery instruction, not a bill.
+
+### Several suppliers on one invoice
+
+One invoice can carry items from more than one supplier. Tapping
+**Create Supplier Delivery Orders** creates a separate order for each
+supplier on the invoice, listing only that supplier's own items - three
+suppliers on the invoice means three orders, and a **Print Supplier
+Delivery Order** button for each, labelled with the supplier's name. No
+supplier is ever handed a document listing another supplier's goods.
 
 ## What you can and can't see
 

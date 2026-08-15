@@ -83,6 +83,27 @@ export interface SupplierRef {
 	supplier_name: string;
 }
 
+/** Where a Sales Invoice stands financially - see
+ * fulfillment_service.get_payment_status. `outstanding_amount` is what the
+ * customer still owes on this invoice (their debt once they have paid only
+ * part of it); `customer_outstanding` is what they owe across every invoice. */
+export interface PaymentStatus {
+	sales_invoice: string;
+	currency: string;
+	/** ERPNext's own Sales Invoice status - "Paid", "Partly Paid", "Unpaid", ... */
+	status: string;
+	grand_total: number;
+	paid_amount: number;
+	outstanding_amount: number;
+	customer_outstanding: number;
+}
+
+export interface SupplierDeliveryOrderRef {
+	name: string;
+	supplier: string;
+	supplier_name: string;
+}
+
 export interface SessionContext {
 	showroom: string | null;
 	is_unrestricted: boolean;
