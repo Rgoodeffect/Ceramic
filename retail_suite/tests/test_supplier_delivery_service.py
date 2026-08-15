@@ -30,7 +30,14 @@ class TestSupplierDeliveryService(FrappeTestCase):
 			invoice = sales_service.create_sales_invoice(
 				customer=self.customer,
 				showroom=self.branch,
-				items=[{"item_code": self.item, "required_area_sqm": 2.8, "supply_source": "Supplier"}],
+				items=[
+					{
+						"item_code": self.item,
+						"required_area_sqm": 2.8,
+						"supply_source": "Supplier",
+						"supplier": self.supplier,
+					}
+				],
 				price_list=self.price_list,
 			)
 			invoice.submit()
@@ -47,6 +54,55 @@ class TestSupplierDeliveryService(FrappeTestCase):
 		self.assertEqual(order.supplier, self.supplier)
 		self.assertEqual(order.showroom, self.branch)
 		self.assertEqual(order.items[0].boxes_qty, 2)
+
+	def test_only_the_named_suppliers_items_go_on_its_order(self):
+		"""An invoice can carry lines from several suppliers. Each order must
+		list only the lines belonging to the supplier it is raised for -
+		otherwise a supplier is handed a document telling it to deliver
+		another supplier's goods."""
+		other_item = test_utils.ensure_item("_Test SDS Other Item", area_per_box=2.0)
+		test_utils.ensure_price(other_item, self.price_list, rate=60)
+		other_supplier = test_utils.ensure_supplier("_Test SDS Other Supplier")
+
+		with self.set_user(self.user):
+			invoice = sales_service.create_sales_invoice(
+				customer=self.customer,
+				showroom=self.branch,
+				items=[
+					{
+						"item_code": self.item,
+						"required_area_sqm": 2.8,
+						"supply_source": "Supplier",
+						"supplier": self.supplier,
+					},
+					{
+						"item_code": other_item,
+						"required_area_sqm": 4.0,
+						"supply_source": "Supplier",
+						"supplier": other_supplier,
+					},
+				],
+				price_list=self.price_list,
+			)
+			invoice.submit()
+			order = supplier_delivery_service.create_from_sales_invoice(
+				sales_invoice_name=invoice.name,
+				supplier=other_supplier,
+				delivery_date=add_days(today(), 2),
+			)
+
+		self.assertEqual(order.supplier, other_supplier)
+		self.assertEqual([row.item_code for row in order.items], [other_item])
+
+	def test_rejects_a_supplier_with_no_items_on_the_invoice(self):
+		invoice, _confirmation = self._submitted_invoice_and_confirmation()
+		unrelated = test_utils.ensure_supplier("_Test SDS Unrelated Supplier")
+		with self.set_user(self.user), self.assertRaises(frappe.ValidationError):
+			supplier_delivery_service.create_from_sales_invoice(
+				sales_invoice_name=invoice.name,
+				supplier=unrelated,
+				delivery_date=add_days(today(), 2),
+			)
 
 	def test_order_item_never_carries_price_fields(self):
 		meta = frappe.get_meta("Supplier Delivery Order Item")
