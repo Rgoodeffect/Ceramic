@@ -71,8 +71,13 @@ version bump.
 
 ## Changelog
 
-### v0.0.1 (current)
-Initial implementation: application scaffold, core doctypes and
+Every version of this app lives on its own branch, named for the version
+it holds (`v1.0.0`, `v1.1.0`, ...). To move a site from one version to
+another, point `bench get-app`/`git pull` at the target version's branch
+and follow the standard upgrade procedure above.
+
+### v1.0.0 (current)
+Initial Ceramic Showroom release: application scaffold, core doctypes and
 permissions, calculation engine and business services, validation hooks,
 API layer, Workspace, Ceramic POS, reports and dashboards, print formats,
 demo data, and tests. See `documentation/architecture/PLAN.md` for the
