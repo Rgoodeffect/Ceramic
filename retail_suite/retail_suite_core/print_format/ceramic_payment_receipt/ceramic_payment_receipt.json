@@ -1,0 +1,20 @@
+{
+ "align_labels_right": 0,
+ "creation": "2026-07-30 00:00:00.000000",
+ "css": ".retail-print{font-family:'Helvetica Neue',Arial,sans-serif;color:#1f2937;font-size:12px}.retail-print .header{border-bottom:2px solid #1f2937;padding-bottom:12px;margin-bottom:16px}.retail-print .doc-title{font-size:20px;font-weight:700;margin:0}.retail-print .muted{color:#6b7280;font-size:11px}.retail-print .totals{width:320px;margin-top:12px}.retail-print .totals div{display:flex;justify-content:space-between;padding:4px 0;font-size:13px;border-bottom:1px solid #e5e7eb}.retail-print .totals .grand{font-weight:700;font-size:16px;border-top:1px solid #1f2937;border-bottom:none;margin-top:4px;padding-top:8px}",
+ "disabled": 0,
+ "doc_type": "Payment Entry",
+ "doctype": "Print Format",
+ "font": "Default",
+ "html": "<div class=\"retail-print\">\n{% if letter_head and not no_letterhead %}<div class=\"letter-head\">{{ letter_head }}</div>{% endif %}\n  <div class=\"header\">\n    <p class=\"doc-title\">{{ _(\"Payment Receipt\") }}</p>\n    <p class=\"muted\">{{ _(\"Receipt No.\") }} {{ doc.name }} &middot; {{ doc.get_formatted(\"posting_date\") }}</p>\n  </div>\n\n  {% set sales_invoice_refs = (doc.references | selectattr(\"reference_doctype\", \"equalto\", \"Sales Invoice\") | map(attribute=\"reference_name\") | list) %}\n  {% if sales_invoice_refs %}\n  <p class=\"muted\">{{ _(\"Sales Invoice\") }}: {{ sales_invoice_refs | join(\", \") }}</p>\n  {% endif %}\n  {% set invoice_totals = frappe.db.get_value(\"Sales Invoice\", sales_invoice_refs[0], [\"rounded_total\", \"grand_total\", \"outstanding_amount\", \"currency\"], as_dict=True) if sales_invoice_refs else None %}\n\n  <div class=\"totals\">\n    <div><span>{{ _(\"Customer\") }}</span><span>{{ doc.party_name if doc.party_type == \"Customer\" else doc.party }}</span></div>\n    <div><span>{{ _(\"Payment Method\") }}</span><span>{{ doc.mode_of_payment or doc.payment_type }}</span></div>\n    <div><span>{{ _(\"Received By\") }}</span><span>{{ frappe.db.get_value(\"User\", doc.owner, \"full_name\") or doc.owner }}</span></div>\n    {% if invoice_totals %}\n    <div><span>{{ _(\"Invoice Total\") }}</span><span>{{ frappe.utils.fmt_money(invoice_totals.rounded_total or invoice_totals.grand_total, currency=invoice_totals.currency) }}</span></div>\n    {% endif %}\n    <div class=\"grand\"><span>{{ _(\"Amount\") }}</span><span>{{ frappe.utils.fmt_money(doc.paid_amount, currency=doc.paid_to_account_currency or doc.currency) }}</span></div>\n    <!-- A receipt is only ever printed for a submitted Payment Entry, so the\n         invoice's outstanding_amount already accounts for this payment: it is\n         what the customer still owes on the way out, which is the whole point\n         of the receipt when they only paid part of the invoice. -->\n    {% if invoice_totals %}\n    <div><span>{{ _(\"Remaining Debt\") }}</span><span>{{ frappe.utils.fmt_money(invoice_totals.outstanding_amount, currency=invoice_totals.currency) }}</span></div>\n    {% endif %}\n  </div>\n\n  {% if doc.custom_qr_code %}\n  <div style=\"margin-top:16px\"><img src=\"{{ doc.custom_qr_code }}\" style=\"width:90px;height:90px\" alt=\"QR Code\"></div>\n  {% endif %}\n</div>\n",
+ "line_breaks": 0,
+ "modified": "2026-08-15 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Retail Suite Core",
+ "name": "Ceramic Payment Receipt",
+ "owner": "Administrator",
+ "print_format_type": "Jinja",
+ "raw_printing": 0,
+ "show_section_headings": 0,
+ "standard": "Yes"
+}

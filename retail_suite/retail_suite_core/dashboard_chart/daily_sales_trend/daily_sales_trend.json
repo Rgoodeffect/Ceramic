@@ -1,0 +1,20 @@
+{
+ "doctype": "Dashboard Chart",
+ "name": "Daily Sales Trend",
+ "chart_name": "Daily Sales Trend",
+ "chart_type": "Sum",
+ "document_type": "Sales Invoice",
+ "based_on": "posting_date",
+ "value_based_on": "grand_total",
+ "type": "Line",
+ "time_interval": "Daily",
+ "timespan": "Last Month",
+ "timeseries": 1,
+ "filters_json": "[[\"Sales Invoice\",\"docstatus\",\"=\",1]]",
+ "is_public": 1,
+ "module": "Retail Suite Core",
+ "creation": "2026-07-30 00:00:00.000000",
+ "modified": "2026-07-30 00:00:00.000000",
+ "modified_by": "Administrator",
+ "owner": "Administrator"
+}

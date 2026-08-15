@@ -1,0 +1,198 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "SAC-.YYYY.-.#####",
+ "creation": "2026-07-30 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "supplier",
+  "item",
+  "showroom",
+  "column_break_supplier",
+  "status",
+  "confirmation_date",
+  "confirmation_time",
+  "section_break_contact",
+  "contact_person",
+  "phone_number",
+  "column_break_contact",
+  "confirmed_by",
+  "section_break_remarks",
+  "remarks",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Supplier",
+   "options": "Supplier",
+   "reqd": 1
+  },
+  {
+   "description": "Optional: the specific product whose availability was confirmed.",
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item",
+   "options": "Item"
+  },
+  {
+   "fieldname": "showroom",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Showroom",
+   "options": "Branch",
+   "reqd": 1,
+   "description": "Automatically set from your assigned showroom."
+  },
+  {
+   "fieldname": "column_break_supplier",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nConfirmed\nRejected"
+  },
+  {
+   "fieldname": "confirmation_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Confirmation Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "confirmation_time",
+   "fieldtype": "Time",
+   "label": "Confirmation Time",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_contact",
+   "fieldtype": "Section Break",
+   "label": "Supplier Contact"
+  },
+  {
+   "fieldname": "contact_person",
+   "fieldtype": "Data",
+   "label": "Contact Person",
+   "reqd": 1
+  },
+  {
+   "fieldname": "phone_number",
+   "fieldtype": "Data",
+   "label": "Phone Number",
+   "options": "Phone",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_contact",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "__user",
+   "fieldname": "confirmed_by",
+   "fieldtype": "Link",
+   "label": "Confirmed By",
+   "options": "User",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_remarks",
+   "fieldtype": "Section Break",
+   "collapsible": 1,
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Supplier Availability Confirmation",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-07-30 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Retail Suite Core",
+ "name": "Supplier Availability Confirmation",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "print": 1
+  },
+  {
+   "role": "Retail Salesperson",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "submit": 1,
+   "report": 1,
+   "share": 1,
+   "print": 1
+  },
+  {
+   "role": "Retail Showroom Manager",
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "print": 1
+  },
+  {
+   "role": "Retail Purchasing User",
+   "read": 1,
+   "write": 1,
+   "report": 1,
+   "share": 1,
+   "print": 1
+  },
+  {
+   "role": "Retail Accounts User",
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "print": 1
+  },
+  {
+   "role": "Retail Company Owner",
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -1,0 +1,165 @@
+"""The single source of truth for area/box math (spec Part 6: Calculation Engine).
+
+Every place that turns a customer's required area into boxes, a delivered
+area, or an invoice amount must go through this module - the POS API, the
+Quotation/Sales Invoice `validate` doc_events (Phase 5), and reports. Never
+duplicate these formulas elsewhere.
+"""
+
+from __future__ import annotations
+
+import math
+
+import frappe
+from frappe import _
+
+
+def calculate_boxes(required_area_sqm: float, area_per_box: float) -> int:
+	"""Round the required area up to a whole number of boxes. Never returns a fraction."""
+	if required_area_sqm is None or required_area_sqm <= 0:
+		frappe.throw(_("Required area must be greater than zero."), frappe.ValidationError)
+	if area_per_box is None or area_per_box <= 0:
+		frappe.throw(_("Area per box must be greater than zero."), frappe.ValidationError)
+	return math.ceil(required_area_sqm / area_per_box)
+
+
+def calculate_delivered_area(boxes: int, area_per_box: float) -> float:
+	"""What the customer actually receives and pays for: boxes x area per box."""
+	return round(boxes * area_per_box, 3)
+
+
+def get_item_area_per_box(item_code: str) -> float:
+	area_per_box = frappe.db.get_value("Item", item_code, "custom_area_per_box")
+	if not area_per_box or area_per_box <= 0:
+		frappe.throw(
+			_("Item {0} does not have a valid Area Per Box configured.").format(item_code),
+			frappe.ValidationError,
+		)
+	return area_per_box
+
+
+def get_item_price_per_sqm(item_code: str, price_list: str) -> float:
+	"""Look up the Square Meter price from the standard Item Price / Price List - never a
+	custom pricing engine (spec: "Use ERPNext Price List. Do not create custom pricing
+	engine.")."""
+	if not price_list:
+		frappe.throw(_("A price list is required to price item {0}.").format(item_code))
+	price_list_rate = frappe.db.get_value(
+		"Item Price",
+		{"item_code": item_code, "price_list": price_list, "uom": "Square Meter", "selling": 1},
+		"price_list_rate",
+	)
+	if price_list_rate is None:
+		frappe.throw(
+			_("No Square Meter price found for item {0} in price list {1}.").format(item_code, price_list),
+			frappe.ValidationError,
+		)
+	return price_list_rate
+
+
+def calculate_row(item_code: str, required_area_sqm: float, price_list: str) -> dict:
+	"""Full calculation for one Quotation/Sales Invoice item row.
+
+	Returns boxes, the area actually delivered, the per-box rate translated
+	from the Square Meter price list, and the line amount - all derived from the
+	single required-area input and the item's configured Area Per Box.
+	"""
+	area_per_box = get_item_area_per_box(item_code)
+	boxes = calculate_boxes(required_area_sqm, area_per_box)
+	delivered_area_sqm = calculate_delivered_area(boxes, area_per_box)
+	price_per_sqm = get_item_price_per_sqm(item_code, price_list)
+	rate_per_box = round(price_per_sqm * area_per_box, 2)
+	amount = round(boxes * rate_per_box, 2)
+	return {
+		"boxes": boxes,
+		"area_per_box": area_per_box,
+		"delivered_area_sqm": delivered_area_sqm,
+		"price_per_sqm": price_per_sqm,
+		"rate_per_box": rate_per_box,
+		"amount": amount,
+	}
+
+
+def apply_to_item_row(row, price_list: str) -> None:
+	"""Mutate a Quotation Item / Sales Invoice Item child row from its required area.
+
+	Called both when the POS API builds rows programmatically and from the
+	`validate` doc_event on manually-entered Desk documents (Phase 5), so
+	both paths produce identical numbers.
+	"""
+	result = calculate_row(row.item_code, row.custom_required_area_sqm, price_list)
+	row.qty = result["boxes"]
+	row.uom = "Box"
+	row.rate = result["rate_per_box"]
+	row.custom_delivered_area_sqm = result["delivered_area_sqm"]
+	# `rate` has to stay the per-box figure - qty is in boxes, and ERPNext
+	# computes amount = qty x rate, so that's what keeps the accounting
+	# correct. But every customer-facing surface (POS cart, spec Part 4/8's
+	# print formats) is supposed to show the true price *per square meter*,
+	# which is a different number (rate / area_per_box) - found by a real
+	# printed invoice showing "$86.40 / m²" for an item actually priced at
+	# $60/m² (86.40 was 60 x 1.44 area_per_box, the per-box rate, mislabeled).
+	# Stored separately here rather than recomputed in the template so print
+	# formats don't need to know about area_per_box at all.
+	row.custom_price_per_sqm = result["price_per_sqm"]
+
+
+def is_area_based_item(item_code: str) -> bool:
+	"""Whether an item goes through the m²/box engine at all. Not every item
+	a showroom sells does - some are priced and sold by the piece, bag, etc.
+	(spec follow-up: "some items are not calculated by square meter")."""
+	area_per_box = frappe.db.get_value("Item", item_code, "custom_area_per_box")
+	return bool(area_per_box and area_per_box > 0)
+
+
+def calculate_simple_row(item_code: str, qty: float, price_list: str) -> dict:
+	"""Calculation for a non-ceramic item row: plain qty x rate in the item's
+	own stock UOM, via the standard ERPNext Item Price (spec: "Use ERPNext
+	Price List. Do not create custom pricing engine." - applies here too,
+	not just to the ceramic m² price). Mirrors `calculate_row`'s use as a
+	preview/apply source so the POS cart and print formats don't need two
+	separate code paths, only a branch on whether the item is area-based.
+	"""
+	if qty is None or qty <= 0:
+		frappe.throw(_("Quantity must be greater than zero."), frappe.ValidationError)
+	stock_uom = frappe.db.get_value("Item", item_code, "stock_uom")
+	if not stock_uom:
+		frappe.throw(_("Item {0} not found.").format(item_code), frappe.ValidationError)
+	rate = frappe.db.get_value(
+		"Item Price",
+		{"item_code": item_code, "price_list": price_list, "uom": stock_uom, "selling": 1},
+		"price_list_rate",
+	)
+	if rate is None:
+		frappe.throw(
+			_("No {0} price found for item {1} in price list {2}.").format(stock_uom, item_code, price_list),
+			frappe.ValidationError,
+		)
+	return {"qty": qty, "uom": stock_uom, "rate": rate, "amount": round(qty * rate, 2)}
+
+
+def apply_simple_row(row, qty: float, price_list: str) -> None:
+	"""Mutate a Quotation Item / Sales Invoice Item child row for a
+	non-ceramic item - the POS-API equivalent of `apply_to_item_row` for
+	items with no Area Per Box configured."""
+	result = calculate_simple_row(row.item_code, qty, price_list)
+	row.qty = result["qty"]
+	row.uom = result["uom"]
+	row.rate = result["rate"]
+
+
+def validate_item_rows(doc, method=None) -> None:
+	"""`validate` doc_event body for Quotation and Sales Invoice (Phase 5).
+
+	Recomputes every ceramic item row from its required area so manual Desk
+	entry and the POS API always agree. Items without a configured Area Per
+	Box (i.e. not part of the ceramic vertical) are left untouched, so this
+	is safe on an instance where other, non-retail sales also happen.
+	"""
+	price_list = doc.get("selling_price_list")
+	for row in doc.items:
+		if not row.custom_required_area_sqm:
+			continue
+		if not frappe.db.get_value("Item", row.item_code, "custom_area_per_box"):
+			continue
+		apply_to_item_row(row, price_list)
