@@ -981,6 +981,23 @@ No prices.
 
 
 
+One order per supplier:
+
+
+A single invoice may contain items from several different suppliers.
+
+
+One Supplier Delivery Order is created and printed for each supplier on
+the invoice.
+
+
+Each order lists only the items supplied by that supplier.
+
+
+No supplier ever receives a document listing another supplier's items.
+
+
+
 =====================================================================================
 WORKSPACE DESIGN
 =====================================================================================
@@ -2959,6 +2976,28 @@ Bank Transfer
 
 
 Other ERPNext methods
+
+
+Partial payment:
+
+
+A customer may pay part of the invoice value at the counter.
+
+
+The unpaid remainder stays on the Sales Invoice as its outstanding amount -
+a debt owed by the customer, payable later.
+
+
+A customer may also take the goods without paying anything, leaving the
+whole invoice value as their debt.
+
+
+Further payments are recorded against the same invoice until it is settled.
+Each payment produces its own Payment Entry and its own receipt.
+
+
+The invoice print and the payment receipt must both show the amount paid
+and the remaining debt.
 
 
 

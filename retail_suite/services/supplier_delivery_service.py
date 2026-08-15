@@ -51,9 +51,29 @@ def create_from_sales_invoice(
 	if not supplier:
 		frappe.throw(_("A supplier is required to create a supplier delivery order."))
 
-	supplier_items = [row for row in invoice.items if row.custom_supply_source == SUPPLIER_SOURCE]
+	# Only this supplier's lines belong on this supplier's order. An invoice
+	# can carry items from several suppliers at once, and each one is sent
+	# (and printed) its own order covering just its own goods - see
+	# fulfillment_service.create_supplier_deliveries, which groups the rows
+	# and calls this once per supplier.
+	#
+	# A Supplier-sourced row without a `custom_supplier` of its own falls
+	# back to the supplier this order is being raised for: the field only
+	# became mandatory (sales_service.validate_supply_sources) after some
+	# invoices had already been saved without it, and those older rows were
+	# always intended for the single supplier the order named.
+	supplier_items = [
+		row
+		for row in invoice.items
+		if row.custom_supply_source == SUPPLIER_SOURCE
+		and (row.get("custom_supplier") or supplier) == supplier
+	]
 	if not supplier_items:
-		frappe.throw(_("Sales Invoice {0} has no items sourced from a supplier.").format(sales_invoice_name))
+		frappe.throw(
+			_("Sales Invoice {0} has no items sourced from supplier {1}.").format(
+				sales_invoice_name, supplier
+			)
+		)
 
 	order = frappe.new_doc("Supplier Delivery Order")
 	order.supplier = supplier

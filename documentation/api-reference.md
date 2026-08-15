@@ -70,6 +70,41 @@ Converts a Quotation into a Sales Invoice via ERPNext's own mapping
 function, then applies the per-item supply source. Returns
 `{"name": "<sales invoice id>"}`.
 
+## `retail_suite.api.fulfillment`
+
+### `create_payment(sales_invoice, mode_of_payment=None, paid_amount=None)`
+Records and submits a Payment Entry against a submitted Sales Invoice.
+Leave `paid_amount` unset to settle the invoice in full. Pass a smaller
+amount to take a **part payment**: the rest stays on the invoice as its
+`outstanding_amount` - the customer's debt - and the invoice moves to
+ERPNext's `Partly Paid` status. Call it again later, with the balance or
+any part of it, to pay more of that debt off; each call produces its own
+receipt. Returns
+`{"name": "<payment entry id>", "paid_amount": <float>, "payment_status": {...}}`,
+where `payment_status` is the same shape `get_payment_status` returns, so
+the caller sees the new balance without a second round-trip.
+
+### `get_payment_status(sales_invoice)`
+Returns `{"sales_invoice", "currency", "status", "grand_total",
+"paid_amount", "outstanding_amount", "customer_outstanding"}`.
+`paid_amount` is derived from what is still outstanding, not from
+`Sales Invoice.paid_amount` - that field only carries a figure on POS-mode
+invoices and stays 0 on these however much has been received.
+`customer_outstanding` is what the customer owes across every submitted
+invoice, company-wide, not just this one.
+
+### `create_delivery_note(sales_invoice)`
+Creates and submits a Delivery Note covering only the invoice's
+`Company Warehouse`-sourced lines. Returns `{"name": "<delivery note id>"}`.
+
+### `create_supplier_deliveries(sales_invoice, delivery_date=None)`
+Creates and submits **one Supplier Delivery Order per supplier** on the
+invoice's Supplier-sourced lines, each carrying only that supplier's own
+items - an invoice mixing three suppliers produces three orders, and three
+printouts. Returns
+`{"orders": [{"name", "supplier", "supplier_name"}, ...]}`, ordered by
+where each supplier first appears on the invoice.
+
 ## `retail_suite.api.supplier_delivery`
 
 ### `record_availability_confirmation(supplier, showroom, contact_person, phone_number, status, item=None, confirmation_date=None, confirmation_time=None, remarks=None)`
@@ -95,3 +130,13 @@ pricing.
 - `"Supplier availability confirmation is required before creating a
   supplier delivery order."` - the confirmation passed to
   `create_supplier_delivery_order` isn't submitted/Confirmed.
+- `"Payment amount must be greater than zero."` - `create_payment` was
+  given a `paid_amount` of 0 or less. Taking no payment at all isn't a
+  payment: just don't call `create_payment`, and the whole invoice stands
+  as the customer's debt.
+- `"Payment amount {0} is more than the outstanding amount {1} on Sales
+  Invoice {2}."` - `create_payment` was asked to take more than is still
+  owed on the invoice.
+- `"Sales Invoice {0} has no items sourced from supplier {1}."` - a
+  Supplier Delivery Order was requested for a supplier that has no lines
+  on that invoice.
