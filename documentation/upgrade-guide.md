@@ -76,7 +76,30 @@ it holds (`v1.0.0`, `v1.1.0`, ...). To move a site from one version to
 another, point `bench get-app`/`git pull` at the target version's branch
 and follow the standard upgrade procedure above.
 
-### v1.0.0 (current)
+### v1.1.0 (current)
+Partial payment at the POS, and one supplier delivery order per supplier.
+
+- A customer can pay part of a Sales Invoice and owe the rest: the
+  remainder stays on the invoice as its outstanding amount and the
+  invoice is marked *Partly Paid*. Later payments against the same
+  invoice pay that debt off, each with its own receipt.
+- The invoice and receipt print formats now show the amount actually
+  paid and the remaining debt.
+- A Sales Invoice carrying items from several suppliers now produces one
+  Supplier Delivery Order per supplier, each listing only that
+  supplier's own items. Previously every supplier-sourced row went onto
+  a single order filed under the first row's supplier.
+
+Migration notes: no schema change - `bench migrate` only needs to pick up
+the two updated print formats. `retail_suite.api.fulfillment.
+create_supplier_delivery` is renamed to `create_supplier_deliveries` and
+now returns `{"orders": [...]}` instead of `{"name": ...}`; any caller
+outside this app needs updating. `create_payment` takes a new optional
+`paid_amount` and returns the invoice's payment status alongside the
+Payment Entry name - existing callers that omit `paid_amount` keep
+settling the invoice in full, as before.
+
+### v1.0.0
 Initial Ceramic Showroom release: application scaffold, core doctypes and
 permissions, calculation engine and business services, validation hooks,
 API layer, Workspace, Ceramic POS, reports and dashboards, print formats,
